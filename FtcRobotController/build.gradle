@@ -1,6 +1,7 @@
 //
 // build.gradle in FtcRobotController
 //
+
 apply plugin: 'com.android.library'
 
 android {
@@ -19,6 +20,10 @@ android {
 }
 
 repositories {
+    maven { url 'https://maven.google.com' }
+    maven { url "https://dl.bintray.com/groovy/maven/" }
+    maven { url "http://central.maven.org/maven2/" }
+    maven { url "http://repo.spring.io/plugins-release/" }
     flatDir {
         dirs '../libs'
     }
