@@ -8,55 +8,44 @@ import static java.lang.Math.abs;
 
 @TeleOp(name = "T: JoyStickControl", group = "Tinkering")
 
-public class JoyStickControl extends OpMode {
-    DcMotor M0, M1;
-
-    double powerLeft;
-    double powerRight;
-    double power;
+public class JoyStickControl extends BaseOpMode {
 
     @Override
-    public void init() {
-        M0 = hardwareMap.dcMotor.get("M0");
-        M1 = hardwareMap.dcMotor.get("M1");
-    }
+    public void start()
+    {
 
-    @Override
-    public void start() {
-        powerLeft = 0.0;
-        powerRight = 0.0;
-        power = 0.0;
     }
 
     @Override
     public void loop() {
+        super.loop();
 
-        powerLeft = 0.0;
-        powerRight = 0.0;
-        power = -gamepad1.left_stick_y;
+        double powerLeft = 0.0;
+        double powerRight = 0.0;
+        double power = -gamepad1.left_stick_y;
 
 
         //Joystick Control
-        if(abs(power) < 0.1) {
+        if(abs(power) < 0.1)
+        {
             powerLeft = gamepad1.left_stick_x;
             powerRight = -powerLeft;
         }
-        else if(gamepad1.left_stick_x < 0){
+        else if(gamepad1.left_stick_x < 0)
+        {
             powerRight = power;
             powerLeft = power + 2*gamepad1.left_stick_x;
         }
-        else{
+        else
+        {
             powerLeft = power;
             powerRight = power - 2*gamepad1.left_stick_x;
         }
 
+        setLeftPower(powerLeft);
+        setRightPower(powerRight);
+        armExtensionMotor.setPower(gamepad2.left_stick_y);
+        grabberServo.setPosition(-gamepad2.right_stick_x);
 
-
-
-        telemetry.addLine(String.format("M0=%.2f M1=%.2f", powerLeft, powerRight));
-        telemetry.addLine(String.format("lt=%.2f rt=%.2f", gamepad1.right_trigger, gamepad1.left_trigger));
-        telemetry.addLine(String.format("lx=%.2f ly=%.2f rx=%.2f ry=%.2f", gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x, gamepad1.right_stick_y));
-        M0.setPower(powerLeft);
-        M1.setPower(-powerRight);
     }
 }
