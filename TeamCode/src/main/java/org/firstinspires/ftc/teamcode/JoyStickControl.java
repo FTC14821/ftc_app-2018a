@@ -13,7 +13,7 @@ public class JoyStickControl extends BaseOpMode {
     @Override
     public void start()
     {
-
+        super.start();
     }
 
     @Override
@@ -28,24 +28,25 @@ public class JoyStickControl extends BaseOpMode {
         //Joystick Control
         if(abs(power) < 0.1)
         {
+            // left_stick_x: negative to left
             powerLeft = gamepad1.left_stick_x;
             powerRight = -powerLeft;
         }
-        else if(gamepad1.left_stick_x < 0)
+        else if(gamepad1.left_stick_x > 0)
         {
+            // Turning to right: powerLeft should be more than powerRight
             powerRight = power;
             powerLeft = power + 2*gamepad1.left_stick_x;
         }
         else
         {
+            // Turning to left: powerLeft should be less than powerRight
+            // (powerRight is bigger after subtraction because left_stick_x < 0)
             powerLeft = power;
             powerRight = power - 2*gamepad1.left_stick_x;
         }
 
         setLeftPower(powerLeft);
         setRightPower(powerRight);
-        armExtensionMotor.setPower(gamepad2.left_stick_y);
-        grabberServo.setPosition(-gamepad2.right_stick_x);
-
     }
 }

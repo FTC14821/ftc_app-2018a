@@ -14,8 +14,8 @@ public class TriggerDrive extends OpMode {
 
     @Override
     public void init() {
-        M0 = hardwareMap.dcMotor.get("rightMotor");
-        M1 = hardwareMap.dcMotor.get("leftMotor");
+        M0 = hardwareMap.dcMotor.get("M0");
+        M1 = hardwareMap.dcMotor.get("M1");
     }
 
     @Override
@@ -56,7 +56,7 @@ public class TriggerDrive extends OpMode {
 
 
 
-        telemetry.addLine(String.format("rightMotor=%.2f leftMotor=%.2f", power1, power2));
+        telemetry.addLine(String.format("M0=%.2f M1=%.2f", power1, power2));
         telemetry.addLine(String.format("lt=%.2f rt=%.2f", gamepad1.right_trigger, gamepad1.left_trigger));
         M0.setPower(power1);
         M1.setPower(power2);

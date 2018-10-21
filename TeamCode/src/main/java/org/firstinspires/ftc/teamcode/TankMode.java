@@ -11,27 +11,19 @@ import static java.lang.Math.abs;
 
 public class TankMode extends BaseOpMode {
 
-    double powerLeft;
-    double powerRight;
-
     @Override
     public void start() {
-        powerLeft = 0.0;
-        powerRight = 0.0;
+        super.start();
     }
 
     @Override
     public void loop() {
         super.loop();
 
-        powerLeft = 0.0;
-        powerRight = 0.0;
+        double powerLeft = -gamepad1.left_stick_y;
+        double powerRight = -gamepad1.right_stick_y;
 
-        powerLeft = -gamepad1.left_stick_y;
-        powerRight = -gamepad1.right_stick_y;
-
-
-        setLeftPower(powerLeft);
-        setRightPower(powerRight);
+        setRightPower(powerLeft);
+        setLeftPower(powerRight);
     }
 }
