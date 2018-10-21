@@ -1,20 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.Func;
-import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
-import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
-
-import java.util.Locale;
 
 abstract class BaseOpMode extends OpMode {
     DcMotor M0;
@@ -25,6 +15,7 @@ abstract class BaseOpMode extends OpMode {
     boolean armFacesForward;
     double currentLeftPower = 0;
     double currentRightPower = 0;
+
 
     TeamImu teamImu;
 
@@ -45,7 +36,7 @@ abstract class BaseOpMode extends OpMode {
         grabberServo = hardwareMap.servo.get("GrabberServo");
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
 
-        teamImu = new TeamImu().initialize(hardwareMap);
+        teamImu = new TeamImu().initialize(hardwareMap, telemetry);
 
 
         telemetry.addLine("GP1 JS: ")
@@ -56,27 +47,31 @@ abstract class BaseOpMode extends OpMode {
                 .addData("R: ", new Func<String>() {
                     @Override public String value() {
                         return String.format("(%.2f, %.2f)", gamepad1.right_stick_x, gamepad1.right_stick_y);
-                    }});
+                    }})
+                ;
 
         telemetry.addLine("GP2 JS: ")
                 .addData("L: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad1.left_stick_x, gamepad1.left_stick_y);
+                        return String.format("(%.2f, %.2f)", gamepad2.left_stick_x, gamepad2.left_stick_y);
                     }})
                 .addData("R: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad1.right_stick_x, gamepad1.right_stick_y);
-                    }});
+                        return String.format("(%.2f, %.2f)", gamepad2.right_stick_x, gamepad2.right_stick_y);
+                    }})
+                ;
 
-//        telemetry.addLine("Motors: ")
-//                .addData("Right: ", new Func<String>() {
-//                    @Override public String value() {
-//                        return String.format("%.2f @%d", currentRightPower, getRightMotor().getCurrentPosition());
-//                    }})
-//                .addData("Left: ", new Func<String>() {
-//                    @Override public String value() {
-//                        return String.format("%.2f @%d", currentLeftPower, getLeftMotor().getCurrentPosition());
-//                    }});
+        telemetry.addLine("Motors: ")
+
+                .addData("Left: ", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.2f @%d", currentLeftPower, getLeftMotor().getCurrentPosition());
+                    }})
+                .addData("Right: ", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.2f @%d", currentRightPower, getRightMotor().getCurrentPosition());
+                    }})
+                ;
     }
 
     DcMotor getRightMotor()
@@ -114,19 +109,29 @@ abstract class BaseOpMode extends OpMode {
         setLeftPower(0);
     }
 
+    public double getArmSlowDown()
+    {
+        double armSlowDown = 1 + gamepad2.left_trigger * 6;
+        return armSlowDown;
+    }
+
     @Override
     public void loop() {
         if(gamepad2.left_stick_y == 0)
         {
             if(armWasMovingLastLoop)
             {
-                armExtensionMotor.setPower(0.1);
-                sleep(10);
-                armExtensionMotor.setPower(-0.1);
-                sleep(10);
+                armExtensionMotor.setPower(-.1*armExtensionMotor.getPower());
+                sleep(100);
+                //armExtensionMotor.setPower(-0.1);
+                //sleep(100);
                 armExtensionMotor.setPower(0);
             }
             armWasMovingLastLoop = false;
+        }
+        else
+        {
+            armWasMovingLastLoop = true;
         }
 
         if(gamepad1.a)
@@ -139,20 +144,28 @@ abstract class BaseOpMode extends OpMode {
             }
         }
 
-        armExtensionMotor.setPower(-gamepad2.left_stick_y);
+        armExtensionMotor.setPower(-gamepad2.left_stick_y / getArmSlowDown());
         grabberServo.setPosition(-gamepad2.right_stick_x);
 
     }
 
+    public double getDrivingSlowDown()
+    {
+        double drivingSlowDown = 1 + gamepad1.left_trigger * 4;
+        return drivingSlowDown;
+    }
+
     void setLeftPower(double leftPower)
     {
-        if(armFacesForward == true)
+        leftPower = leftPower / getDrivingSlowDown();
+
+        if (armFacesForward == true)
         {
-            M0.setPower(-leftPower);
+            M1.setPower(leftPower);
         }
         else
         {
-            M1.setPower(leftPower);
+            M0.setPower(-leftPower);
         }
 
         this.currentLeftPower = leftPower;
@@ -160,13 +173,15 @@ abstract class BaseOpMode extends OpMode {
 
     void setRightPower(double rightPower)
     {
+        rightPower = rightPower / getDrivingSlowDown();
+
         if(armFacesForward == true)
         {
-            M1.setPower(rightPower);
+            M0.setPower(-rightPower);
         }
         else
         {
-            M0.setPower(-rightPower);
+            M1.setPower(rightPower);
         }
 
         this.currentRightPower = rightPower;

@@ -23,7 +23,7 @@ public class TankMode extends BaseOpMode {
         double powerLeft = -gamepad1.left_stick_y;
         double powerRight = -gamepad1.right_stick_y;
 
-        setRightPower(powerLeft);
-        setLeftPower(powerRight);
+        setRightPower(powerRight);
+        setLeftPower(powerLeft);
     }
 }
