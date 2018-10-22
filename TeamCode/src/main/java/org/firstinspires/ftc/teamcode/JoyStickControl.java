@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 
 import static java.lang.Math.abs;
 
@@ -26,6 +24,8 @@ public class JoyStickControl extends BaseOpMode {
 
 
         //Joystick Control
+
+        // Low power: Spin (opposite power to wheels)
         if(abs(power) < 0.1)
         {
             // left_stick_x: negative to left
