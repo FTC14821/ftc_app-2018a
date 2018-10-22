@@ -41,7 +41,7 @@ abstract class BaseOpMode extends OpMode {
         telemetry.addLine("GP1: ")
                 .addData("B: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("abxy=%s%s%s%s", bool2tf(gamepad1.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
+                        return String.format("ABXY=%s%s%s%s", bool2tf(gamepad1.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
                     }})
                 .addData("LJS: ", new Func<String>() {
                     @Override public String value() {
@@ -56,7 +56,7 @@ abstract class BaseOpMode extends OpMode {
         telemetry.addLine("GP2: ")
                 .addData("B: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("abxy=%s%s%s%s", bool2tf(gamepad2.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
+                        return String.format("ABXY=%s%s%s%s", bool2tf(gamepad2.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
                     }})
                 .addData("LJS: ", new Func<String>() {
                     @Override public String value() {
@@ -235,6 +235,7 @@ abstract class BaseOpMode extends OpMode {
             }
             else
             {
+                // Go Straight
                 setLeftPower(power);
                 setRightPower(power);
             }
