@@ -16,7 +16,6 @@ abstract class BaseOpMode extends OpMode {
     double currentLeftPower = 0;
     double currentRightPower = 0;
 
-
     TeamImu teamImu;
 
 
@@ -39,39 +38,59 @@ abstract class BaseOpMode extends OpMode {
         teamImu = new TeamImu().initialize(hardwareMap, telemetry);
 
 
-        telemetry.addLine("GP1 JS: ")
-                .addData("L: ", new Func<String>() {
+        telemetry.addLine("GP1: ")
+                .addData("B: ", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("abxy=%s%s%s%s", bool2tf(gamepad1.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
+                    }})
+                .addData("LJS: ", new Func<String>() {
                     @Override public String value() {
                         return String.format("(%.2f, %.2f)", gamepad1.left_stick_x, gamepad1.left_stick_y);
                     }})
-                .addData("R: ", new Func<String>() {
+                .addData("LTrig/Bump: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad1.right_stick_x, gamepad1.right_stick_y);
+                        return String.format("%.2f/%s", gamepad1.left_trigger, bool2tf(gamepad1.left_bumper));
                     }})
                 ;
 
-        telemetry.addLine("GP2 JS: ")
-                .addData("L: ", new Func<String>() {
+        telemetry.addLine("GP2: ")
+                .addData("B: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad2.left_stick_x, gamepad2.left_stick_y);
+                        return String.format("abxy=%s%s%s%s", bool2tf(gamepad2.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
                     }})
-                .addData("R: ", new Func<String>() {
+                .addData("LJS: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad2.right_stick_x, gamepad2.right_stick_y);
+                        return String.format("(%.2f, %.2f)", gamepad1.left_stick_x, gamepad1.left_stick_y);
                     }})
-                ;
+                .addData("LTrig/Bump: ", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.2f/%s", gamepad1.left_trigger, bool2tf(gamepad1.left_bumper));
+                    }})
+        ;
 
         telemetry.addLine("Motors: ")
 
                 .addData("Left: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("%.2f @%d", currentLeftPower, getLeftMotor().getCurrentPosition());
+                        return String.format("%.2f@%d", currentLeftPower, getLeftMotor().getCurrentPosition());
                     }})
                 .addData("Right: ", new Func<String>() {
                     @Override public String value() {
-                        return String.format("%.2f @%d", currentRightPower, getRightMotor().getCurrentPosition());
+                        return String.format("%.2f@%d", currentRightPower, getRightMotor().getCurrentPosition());
+                    }})
+                .addData("M0: ", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.2f@%d", M0.getPower(), M0.getCurrentPosition());
+                    }})
+                .addData("M1: ", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.2f@%d", M1.getPower(), M1.getCurrentPosition());
                     }})
                 ;
+    }
+
+    private String bool2tf(boolean b) {
+        return b ? "t" : "f";
     }
 
     DcMotor getRightMotor()
@@ -111,6 +130,7 @@ abstract class BaseOpMode extends OpMode {
 
     public double getArmSlowDown()
     {
+        // Slowdown will be 1-->7
         double armSlowDown = 1 + gamepad2.left_trigger * 6;
         return armSlowDown;
     }
@@ -151,12 +171,14 @@ abstract class BaseOpMode extends OpMode {
 
     public double getDrivingSlowDown()
     {
+        // Slowdown will be 1-->5
         double drivingSlowDown = 1 + gamepad1.left_trigger * 4;
         return drivingSlowDown;
     }
 
     void setLeftPower(double leftPower)
     {
+        // Adjust power based on slowdown
         leftPower = leftPower / getDrivingSlowDown();
 
         if (armFacesForward == true)

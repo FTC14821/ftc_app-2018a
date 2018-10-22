@@ -20,12 +20,10 @@ public class TeamImu  {
     BNO055IMU imu;
 
     // Needed for gyro telemetry
-    Orientation angles;
-    Acceleration gravity;
-    Position position;
-    Velocity velocity;
-    Acceleration linearAcceleration;
-    Acceleration acceleration;
+    Orientation t_angles;
+    Position t_position;
+    Velocity t_velocity;
+    Acceleration t_linearAcceleration;
 
     BNO055IMU.Parameters parameters;
     Acceleration accelrationDrift;
@@ -100,60 +98,55 @@ public class TeamImu  {
                 // Acquiring the angles is relatively expensive; we don't want
                 // to do that in each of the three items that need that info, as that's
                 // three times the necessary expense.
-                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-                gravity = imu.getGravity();
-                position = imu.getPosition();
-                linearAcceleration = imu.getLinearAcceleration();
-                acceleration = imu.getAcceleration();
-                velocity = imu.getVelocity();
+                t_angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+                t_position = imu.getPosition();
+                t_linearAcceleration = imu.getLinearAcceleration();
+                t_velocity = imu.getVelocity();
             }
         });
 
-        telemetry.addLine()
+        telemetry.addLine("Orientation: ")
                 .addData("heading", new Func<String>() {
                     @Override
                     public String value() {
-                        return formatAngle(angles.angleUnit, angles.firstAngle);
+                        return formatAngle(t_angles.angleUnit, t_angles.firstAngle);
                     }
                 })
                 .addData("roll", new Func<String>() {
                     @Override
                     public String value() {
-                        return formatAngle(angles.angleUnit, angles.secondAngle);
+                        return formatAngle(t_angles.angleUnit, t_angles.secondAngle);
                     }
                 })
                 .addData("pitch", new Func<String>() {
                     @Override
                     public String value() {
-                        return formatAngle(angles.angleUnit, angles.thirdAngle);
+                        return formatAngle(t_angles.angleUnit, t_angles.thirdAngle);
                     }
                 });
-        telemetry.addLine()
-                .addData("P: ", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("(%.1f, %.1f, %.1f)", position.x, position.y, position.z);
-                    }
-                })
-                .addData("V: ", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("(%.1f, %.1f, %.1f)", velocity.xVeloc, velocity.yVeloc, velocity.zVeloc);
-                    }
-                })
-                .addData("A: ", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("(%.1f, %.1f, %.1f)", acceleration.xAccel, acceleration.yAccel, acceleration.zAccel);
-                    }
-                })
-                .addData("LinA: ", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("(%.1f, %.1f, %.1f)", linearAcceleration.xAccel, linearAcceleration.yAccel, linearAcceleration.zAccel);
-                    }
-                })
-        ;
+
+        Telemetry.Line line = telemetry.addLine();
+
+        line.addData("LinAccel: ", new Func<String>() {
+            @Override
+            public String value() {
+                return String.format("(%.1f, %.1f, %.1f)", t_linearAcceleration.xAccel, t_linearAcceleration.yAccel, t_linearAcceleration.zAccel);
+            }
+        });
+
+        // These can be added when/if we do accel integration
+//            line.addData("P: ", new Func<String>() {
+//                    @Override
+//                    public String value() {
+//                        return String.format("(%.1f, %.1f, %.1f)", t_position.x, t_position.y, t_position.z);
+//                    }
+//                });
+//            line.addData("V: ", new Func<String>() {
+//                    @Override
+//                    public String value() {
+//                        return String.format("(%.1f, %.1f, %.1f)", t_velocity.xVeloc, t_velocity.yVeloc, t_velocity.zVeloc);
+//                    }
+//                });
 
     }
 
