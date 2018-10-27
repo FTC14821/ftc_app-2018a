@@ -57,7 +57,9 @@ abstract class BaseOpMode extends OpMode {
 
 
     @Override
-    public void start() {
+    public void start()
+    {
+
     }
 
 
@@ -74,14 +76,30 @@ abstract class BaseOpMode extends OpMode {
         robot.setArmSlowdown(getArmSlowDown());
 
 
-        if(gamepad1.a)
+        if(gamepad1.back)
         {
             robot.reverseRobotOrientation();
 
             //Wait until button is released before switching front and back
-            while (gamepad1.a)
+            while (gamepad1.back)
             {
                 sleep(1);
+            }
+        }
+
+        if(gamepad1.right_bumper)
+        {
+            while(gamepad1.right_bumper)
+            {
+
+            }
+            if(robot.mineralPlowServo.getPosition() == 0)
+            {
+                robot.mineralPlowServo.setPosition(0.85);
+            }
+            else if(robot.mineralPlowServo.getPosition() > 0.8)
+            {
+                robot.mineralPlowServo.setPosition(0);
             }
         }
 

@@ -12,7 +12,9 @@ public class Robot  {
     DcMotor M0;
     DcMotor M1;
     DcMotor armExtensionMotor;
+    DcMotor hookMotor;
     Servo grabberServo;
+    Servo mineralPlowServo;
 
     boolean motorsInFront = true;
     double currentLeftPower = 0;
@@ -31,7 +33,9 @@ public class Robot  {
         M0 = hardwareMap.dcMotor.get("M0");
         M1 = hardwareMap.dcMotor.get("M1");
 
+        mineralPlowServo = hardwareMap.servo.get("MineralPlowServo");
         grabberServo = hardwareMap.servo.get("GrabberServo");
+        hookMotor = hardwareMap.dcMotor.get("HookMotor");
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
         armExtensionMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
@@ -69,6 +73,10 @@ public class Robot  {
                 .addData("M1", new Func<String>() {
                     @Override public String value() {
                         return String.format("%.1f@%d", M1.getPower(), M1.getCurrentPosition());
+                    }})
+                .addData("Plow", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.1f", mineralPlowServo.getPosition());
                     }})
                 ;
     }
@@ -227,5 +235,20 @@ public class Robot  {
 
     public void setArmSlowdown(double armSlowDown) {
         this.armSlowdown = armSlowDown;
+    }
+
+    public void mineralPlowUp()
+    {
+        mineralPlowServo.setPosition(0.85);
+    }
+
+    public void mineralPlowDown()
+    {
+        mineralPlowServo.setPosition(0);
+    }
+
+    public void hookActivate()
+    {
+
     }
 }
