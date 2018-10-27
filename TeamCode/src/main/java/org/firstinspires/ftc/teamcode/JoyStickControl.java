@@ -18,35 +18,21 @@ public class JoyStickControl extends BaseOpMode {
     public void loop() {
         super.loop();
 
-        double powerLeft = 0.0;
-        double powerRight = 0.0;
         double power = -gamepad1.left_stick_y;
+        double steering = gamepad1.left_stick_x;
 
 
         //Joystick Control
-
         // Low power: Spin (opposite power to wheels)
         if(abs(power) < 0.1)
         {
             // left_stick_x: negative to left
-            powerLeft = gamepad1.left_stick_x;
-            powerRight = -powerLeft;
-        }
-        else if(gamepad1.left_stick_x > 0)
-        {
-            // Turning to right: powerLeft should be more than powerRight
-            powerRight = power;
-            powerLeft = power + 2*gamepad1.left_stick_x;
+            setLeftPower(steering);
+            setRightPower(-steering);
         }
         else
         {
-            // Turning to left: powerLeft should be less than powerRight
-            // (powerRight is bigger after subtraction because left_stick_x < 0)
-            powerLeft = power;
-            powerRight = power - 2*gamepad1.left_stick_x;
+            setPowerSteering(power, steering);
         }
-
-        setLeftPower(powerLeft);
-        setRightPower(powerRight);
     }
 }

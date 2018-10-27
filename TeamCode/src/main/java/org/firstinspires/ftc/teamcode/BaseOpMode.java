@@ -211,27 +211,25 @@ abstract class BaseOpMode extends OpMode {
 
     void inchmove(double inches, double power)
     {
-        double inchesPerRotation = 3.14159265 * 3.75;
-        double rotations = inches / inchesPerRotation;
-        double encoderTicksPerRotation = 1000;
-        double stopPosition = M0.getCurrentPosition() + rotations * encoderTicksPerRotation;
+        double encoderClicksPerInch = 79.27;
+        double encoderClicks = inches*encoderClicksPerInch;
+        double stopPosition = M1.getCurrentPosition() + encoderClicks;
         double startingHeading = teamImu.getHeading();
-        M0.getCurrentPosition();
-        while (M0.getCurrentPosition() <= stopPosition)
+        M1.getCurrentPosition();
+        while (M1.getCurrentPosition() <= stopPosition)
         {
+            //Heading is larger to the left
             double currentHeading = teamImu.getHeading();
-            double headingError = currentHeading - startingHeading;
+            double headingError = startingHeading - currentHeading;
             if(headingError > 0.0)
             {
-                //Assuming we steer too far to the right
-                setRightPower(power);
-                setLeftPower(0.9 * power);
+                //The current heading is too big so we turn to the right
+                setPowerSteering(power, -0.1);
             }
             else if(headingError < 0.0)
             {
-                //Assuming we steer too far to the left
-                setLeftPower(power);
-                setRightPower(0.9 * power);
+                //Assuming we steer too far to the right
+                setPowerSteering(power,  0.1);
             }
             else
             {
@@ -241,5 +239,33 @@ abstract class BaseOpMode extends OpMode {
             }
         }
 
+    }
+
+    /**
+     *
+     * @param power Positive power is forward, negative power is backwards (between -1, 1)
+     * @param steering Positive steering is to the right, negative steering is to the left (between -1, 1)
+     *
+     */
+    void setPowerSteering(double power, double steering)
+    {
+        double powerRight, powerLeft;
+
+        if(steering > 0)
+        {
+            // Turning to right: powerLeft should be more than powerRight
+            powerRight = power;
+            powerLeft = power + 2*steering;
+        }
+        else
+        {
+            // Turning to left: powerLeft should be less than powerRight
+            // (powerRight is bigger after subtraction because left_stick_x < 0)
+            powerLeft = power;
+            powerRight = power - 2*steering;
+        }
+
+        setLeftPower(powerLeft);
+        setRightPower(powerRight);
     }
 }
