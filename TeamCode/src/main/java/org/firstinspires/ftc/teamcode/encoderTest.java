@@ -13,14 +13,13 @@ public class encoderTest extends BaseOpMode {
     public void init() {
         super.init();
 
-        M0.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        M1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        robot.setDrivingZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     @Override
     public void start() {
         super.start();
-        startPosition = M1.getCurrentPosition();
+        startPosition = robot.getWheelPosition();
         stopPosition = startPosition + 4000;
     }
 
@@ -28,18 +27,16 @@ public class encoderTest extends BaseOpMode {
     public void loop() {
         super.loop();
 
-        int currentPosition = M1.getCurrentPosition();
+        int currentPosition = robot.getWheelPosition();
 
         // Go forward until robot hits the stop position
         if ( currentPosition < stopPosition )
         {
-            setLeftPower(0.25);
-            setRightPower(0.25);
+            robot.driveStraight(0.25);
         }
         else
         {
-            setLeftPower(0);
-            setRightPower(0);
+            robot.stop();
         }
     }
 }

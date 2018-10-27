@@ -9,30 +9,34 @@ import static java.lang.Math.abs;
 public class JoyStickControl extends BaseOpMode {
 
     @Override
-    public void start()
-    {
-        super.start();
-    }
-
-    @Override
     public void loop() {
         super.loop();
 
+        // Forward is positive
         double power = -gamepad1.left_stick_y;
+
+        // Left is negative
         double steering = gamepad1.left_stick_x;
 
-
         //Joystick Control
-        // Low power: Spin (opposite power to wheels)
-        if(abs(power) < 0.1)
+        if ( power == 0 && steering == 0 )
         {
-            // left_stick_x: negative to left
-            setLeftPower(steering);
-            setRightPower(-steering);
+            robot.stop();
+        }
+        else if(abs(power) < 0.1)
+        {
+            // Low power: Spin (opposite power to wheels)
+
+            // left_stick_x: negative to left which matches robot.spin
+            robot.spin(steering);
+        }
+        else if (steering == 0 )
+        {
+            robot.driveStraight(power);
         }
         else
         {
-            setPowerSteering(power, steering);
+            robot.setPowerSteering(power, steering);
         }
     }
 }

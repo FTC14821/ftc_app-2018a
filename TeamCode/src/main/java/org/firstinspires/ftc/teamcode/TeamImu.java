@@ -55,9 +55,6 @@ public class TeamImu  {
         return this;
     }
 
-    public void start() {
-    }
-
 
     /**
      * Adjust for phantom acceleration
@@ -106,33 +103,30 @@ public class TeamImu  {
         });
 
         telemetry.addLine("Orientation: ")
-                .addData("heading", new Func<String>() {
+                .addData("H", new Func<String>() {
                     @Override
                     public String value() {
                         return formatAngle(t_angles.angleUnit, t_angles.firstAngle);
                     }
                 })
-                .addData("roll", new Func<String>() {
+                .addData("R", new Func<String>() {
                     @Override
                     public String value() {
                         return formatAngle(t_angles.angleUnit, t_angles.secondAngle);
                     }
                 })
-                .addData("pitch", new Func<String>() {
+                .addData("P", new Func<String>() {
                     @Override
                     public String value() {
                         return formatAngle(t_angles.angleUnit, t_angles.thirdAngle);
                     }
+                })
+                .addData("Acc", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return String.format("(%.1f, %.1f, %.1f)", t_linearAcceleration.xAccel, t_linearAcceleration.yAccel, t_linearAcceleration.zAccel);
+                    }
                 });
-
-        Telemetry.Line line = telemetry.addLine();
-
-        line.addData("LinAccel: ", new Func<String>() {
-            @Override
-            public String value() {
-                return String.format("(%.1f, %.1f, %.1f)", t_linearAcceleration.xAccel, t_linearAcceleration.yAccel, t_linearAcceleration.zAccel);
-            }
-        });
 
         // These can be added when/if we do accel integration
 //            line.addData("P: ", new Func<String>() {
@@ -150,6 +144,11 @@ public class TeamImu  {
 
     }
 
+    /**
+     *
+     * @return (-180..180) Heading based on initial orientation of robot, 0 is forward, positive is
+     * to the left, and negative is to the right
+     */
     public float getHeading() {
         return imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES).firstAngle;
     }

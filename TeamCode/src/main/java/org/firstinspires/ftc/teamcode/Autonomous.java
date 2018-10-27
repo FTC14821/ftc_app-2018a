@@ -5,32 +5,19 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp(name = "T: Autonomous", group = "Tinkering")
 
-public class Autonomous extends BaseOpMode
+public class Autonomous extends BaseLinearOpMode
 {
-
-        boolean firstTime=true;
-
         @Override
-        public void init() {
-                super.init();
-
-                M0.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                M1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        void teamInit() {
+                super.teamInit();
+                robot.setDrivingZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         }
 
         @Override
-        public void loop() {
-                super.loop();
-
-                if (firstTime)
-                {
-                        inchmove(50, 0.05);
-
-                        setLeftPower(0);
-                        setRightPower(0);
-
-                }
-
-                firstTime=false;
+        void teamRun() {
+                teamSleep(5000);
+                inchmove(50, 0.5);
+                robot.stop();
+                teamSleep(30000);
         }
 }
