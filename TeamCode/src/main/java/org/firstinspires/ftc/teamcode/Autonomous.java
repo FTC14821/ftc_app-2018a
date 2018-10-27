@@ -15,9 +15,9 @@ public class Autonomous extends BaseLinearOpMode
 
         @Override
         void teamRun() {
-                teamSleep(5000);
-                inchmove(50, 0.5);
-                robot.stop();
-                teamSleep(30000);
+                while(opModeIsActive() ) {
+                        inchmove(10, 0.5);
+                        turnRight(90, 0.5);
+                }
         }
 }

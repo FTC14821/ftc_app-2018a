@@ -57,14 +57,20 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
     public void teamSleep(long sleep_ms)
     {
+        setOperation(String.format("Sleep(%d ms)", sleep_ms));
+
         long startTime_ms = System.currentTimeMillis();
         long stopTime_ms = startTime_ms + sleep_ms;
 
         while ( opModeIsActive() && System.currentTimeMillis() < stopTime_ms )
         {
+            setStatus(String.format("nap time left: %d sec",
+                    (stopTime_ms - System.currentTimeMillis())/1000));
+
             teamIdle();
             sleep(1);
         }
+        setStatus("nap is over");
     }
 
 
@@ -134,9 +140,39 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
             teamIdle();
         }
+        robot.stop();
+
         setStatus("Done");
 
     }
 
 
+    void turnRight(double degrees, double speed)
+    {
+        setOperation(String.format("TurnRight(d=%.1f, s=%.1f", degrees, speed));
+        double turnApproximation=2;
+        double startingHeading = robot.getHeading();
+        double targetHeading = Team14821Utils.normalizedHeading(startingHeading - degrees + turnApproximation);
+
+        while (opModeIsActive() && robot.getHeading()> targetHeading)
+        {
+            double degreesToGo = robot.getHeading() - targetHeading;
+            setStatus(String.format("%.1f degrees to go. ",
+                    degreesToGo));
+            if(degreesToGo<10)
+            {
+                robot.spin(0.15);
+            }
+            else
+            {
+                robot.spin(speed);
+            }
+
+            teamIdle();
+
+        }
+        setStatus("Right turn is done");
+        robot.stop();
+
+    }
 }
