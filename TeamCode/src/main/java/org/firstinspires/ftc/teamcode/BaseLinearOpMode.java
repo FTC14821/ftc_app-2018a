@@ -152,14 +152,28 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
         setOperation(String.format("TurnRight(d=%.1f, s=%.1f", degrees, speed));
         double turnApproximation=2;
         double startingHeading = robot.getHeading();
-        double targetHeading = Team14821Utils.normalizedHeading(startingHeading - degrees + turnApproximation);
-
-        while (opModeIsActive() && robot.getHeading()> targetHeading)
+        double endHeading = startingHeading - degrees;
+        if (endHeading <= -180)
         {
-            double degreesToGo = robot.getHeading() - targetHeading;
+            endHeading += 360;
+        }
+
+        double degreesToGo = degrees;
+
+        while (opModeIsActive() && robot.getHeading()> endHeading)
+        {
+            degreesToGo = robot.getHeading() - endHeading;
+            if (degreesToGo <= -180)
+            {
+                degreesToGo += 360;
+            }
+            if (degreesToGo > 180)
+            {
+                degreesToGo -= 360;
+            }
             setStatus(String.format("%.1f degrees to go. ",
                     degreesToGo));
-            if(degreesToGo<10)
+            if(degreesToGo<20)
             {
                 robot.spin(0.15);
             }
