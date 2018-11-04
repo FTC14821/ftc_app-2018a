@@ -23,7 +23,9 @@ public class Robot  {
     TeamImu teamImu;
     private double drivingSlowDown=1;
 
-    private double armSlowdown=1;
+    private double armSlowdown= 1;
+
+    private double hookSlowdown= 1;
 
     String motorCommand="";
 
@@ -38,6 +40,7 @@ public class Robot  {
         hookMotor = hardwareMap.dcMotor.get("HookMotor");
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
         armExtensionMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        hookMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         teamImu = new TeamImu().initialize(hardwareMap, telemetry);
 
@@ -168,8 +171,15 @@ public class Robot  {
         getLeftMotor().setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
+    public void setHookPower(double power)
+    {
+        power = power / hookSlowdown;
 
-    public void setArmPower(double power)
+        hookMotor.setPower(power);
+    }
+
+
+    public void setArmExtensionPower(double power)
     {
         power = power / armSlowdown;
 
@@ -235,6 +245,10 @@ public class Robot  {
 
     public void setArmSlowdown(double armSlowDown) {
         this.armSlowdown = armSlowDown;
+    }
+
+    public void setHookSlowdown(double hookSlowDown) {
+        this.hookSlowdown = hookSlowDown;
     }
 
     public void mineralPlowUp()

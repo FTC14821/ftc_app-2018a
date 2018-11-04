@@ -63,17 +63,24 @@ abstract class BaseOpMode extends OpMode {
     }
 
 
-    public double getArmSlowDown()
+    public double getArmExtensionSlowDown()
     {
         // Slowdown will be 1-->7
-        double armSlowDown = 1 + gamepad2.left_trigger * 6;
+        double armSlowDown = 1 + (gamepad2.right_bumper ? 6 : 0);
         return armSlowDown;
+    }
+
+    public double getArmSwingSlowDown()
+    {
+        // Slowdown will be 1-->7
+        double armSwingSlowDown = 1 + (gamepad2.left_bumper ? 1 : 0);
+        return armSwingSlowDown;
     }
 
     @Override
     public void loop() {
         robot.setDrivingSlowdown(getDrivingSlowDown());
-        robot.setArmSlowdown(getArmSlowDown());
+        robot.setArmSlowdown(getArmExtensionSlowDown());
 
 
         if(gamepad1.back)
@@ -103,8 +110,20 @@ abstract class BaseOpMode extends OpMode {
             }
         }
 
-        robot.setArmPower(-gamepad2.left_stick_y / getArmSlowDown());
+        robot.setArmExtensionPower(-gamepad2.left_stick_y / getArmExtensionSlowDown());
         robot.setGrabberServoPosition(-gamepad2.right_stick_x);
+        if(gamepad2.dpad_up)
+        {
+            robot.setHookPower(1 / getHookSlowDown());
+        }
+        else if(gamepad2.dpad_down)
+        {
+            robot.setHookPower(-1 / getHookSlowDown());
+        }
+        else
+        {
+            robot.setHookPower(0);
+        }
 
     }
 
@@ -113,5 +132,12 @@ abstract class BaseOpMode extends OpMode {
         // Slowdown will be 1-->5
         double drivingSlowDown = 1 + gamepad1.left_trigger * 4;
         return drivingSlowDown;
+    }
+
+    public double getHookSlowDown()
+    {
+        // Slowdown will be 1-->5
+        double hookSlowDown = 1 + (gamepad2.left_bumper ? 9 : 0);
+        return hookSlowDown;
     }
 }
