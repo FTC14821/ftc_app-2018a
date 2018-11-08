@@ -20,6 +20,9 @@ public class Robot  {
     double currentLeftPower = 0;
     double currentRightPower = 0;
 
+    public final double MAX_HOOK_DISTANCE = 27500;
+    double hook0;
+
     TeamImu teamImu;
     private double drivingSlowDown=1;
 
@@ -47,7 +50,39 @@ public class Robot  {
         setRobotOrientation(true);
         stop();
 
+        setupRobotTelemetry(telemetry);
+        double change;
+        double oldValue = hookMotor.getCurrentPosition();
+        setHookPower(-0.15);
 
+        while (true)
+        {
+            try
+            {
+                Thread.sleep(500);
+                telemetry.update();
+            }
+            catch (InterruptedException e)
+            {
+                break;
+            }
+
+            change = hookMotor.getCurrentPosition() - oldValue;
+            oldValue = hookMotor.getCurrentPosition();
+
+            // If it hasn't changed much
+            if(change > -5)
+            {
+                setHookPower(0);
+                break;
+            }
+        }
+
+        hook0 = hookMotor.getCurrentPosition() + 500;
+    }
+
+    private void setupRobotTelemetry(Telemetry telemetry)
+    {
         telemetry.addLine("Robot: ")
 
                 .addData("Cmd", new Func<String>() {
@@ -81,9 +116,12 @@ public class Robot  {
                     @Override public String value() {
                         return String.format("%.1f", mineralPlowServo.getPosition());
                     }})
+                .addData("Hook", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.1f@%d", hookMotor.getPower(), hookMotor.getCurrentPosition());
+                    }})
                 ;
     }
-
 
 
     public void stop()
@@ -173,9 +211,12 @@ public class Robot  {
 
     public void setHookPower(double power)
     {
-        power = power / hookSlowdown;
+        if(isHookPowerOK(power))
+        {
+            power = power / hookSlowdown;
 
-        hookMotor.setPower(power);
+            hookMotor.setPower(power);
+        }
     }
 
 
@@ -264,5 +305,26 @@ public class Robot  {
     public void hookActivate()
     {
 
+    }
+
+    public void healthCheck()
+    {
+        if(!isHookPowerOK(hookMotor.getPower()))
+        {
+            hookMotor.setPower(0);
+        }
+    }
+
+    private boolean isHookPowerOK(double powerToCheck)
+    {
+        if(hookMotor.getCurrentPosition() > hook0 + MAX_HOOK_DISTANCE && powerToCheck > 0)
+        {
+            return false;
+        }
+        else if(hookMotor.getCurrentPosition() < hook0 && powerToCheck < 0)
+        {
+            return false;
+        }
+        return true;
     }
 }

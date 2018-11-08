@@ -18,12 +18,19 @@ abstract class BaseOpMode extends OpMode {
 
     @Override
     public void init() {
+        this.msStuckDetectInit = 90000;
+        this.msStuckDetectInitLoop = 90000;
+
         robot = new Robot(hardwareMap, telemetry);
 
         telemetry.addLine("GP1:")
                 .addData("B", new Func<String>() {
                     @Override public String value() {
                         return String.format("ABXY=%s%s%s%s", bool2tf(gamepad1.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
+                    }})
+                .addData("D", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("LUDR=%s%s%s%s", bool2tf(gamepad1.dpad_left), bool2tf(gamepad1.dpad_up), bool2tf(gamepad1.dpad_down), bool2tf(gamepad1.dpad_right));
                     }})
                 .addData("LJS", new Func<String>() {
                     @Override public String value() {
@@ -39,6 +46,10 @@ abstract class BaseOpMode extends OpMode {
                 .addData("B", new Func<String>() {
                     @Override public String value() {
                         return String.format("ABXY=%s%s%s%s", bool2tf(gamepad2.a), bool2tf(gamepad2.b), bool2tf(gamepad2.x), bool2tf(gamepad2.y));
+                    }})
+                .addData("D", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("LUDR=%s%s%s%s", bool2tf(gamepad2.dpad_left), bool2tf(gamepad2.dpad_up), bool2tf(gamepad2.dpad_down), bool2tf(gamepad2.dpad_right));
                     }})
                 .addData("LJS", new Func<String>() {
                     @Override public String value() {
@@ -79,6 +90,7 @@ abstract class BaseOpMode extends OpMode {
 
     @Override
     public void loop() {
+        robot.healthCheck();
         robot.setDrivingSlowdown(getDrivingSlowDown());
         robot.setArmSlowdown(getArmExtensionSlowDown());
 
