@@ -327,4 +327,21 @@ public class Robot  {
         }
         return true;
     }
+
+    public void hookUp(double power, boolean wait){
+        setHookPower(power);
+        if(wait){
+         while (hookMotor.getPower() != 0){
+             healthCheck();;
+         }
+        }
+    }
+    public void hookDown(double power, boolean wait){
+        setHookPower(-Math.abs(power));
+        if(wait){
+            while (hookMotor.getPower() != 0){
+                healthCheck();;
+            }
+        }
+    }
 }

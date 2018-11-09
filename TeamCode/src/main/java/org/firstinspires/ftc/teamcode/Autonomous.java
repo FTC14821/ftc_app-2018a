@@ -14,10 +14,32 @@ public class Autonomous extends BaseLinearOpMode
         }
 
         @Override
-        void teamRun() {
+        void teamRun()
+        {
+            /*
                 while(opModeIsActive() ) {
                         inchmove(10, 0.5);
                         turnRight(90, 0.5);
                 }
+               */
+
+                robot.hookUp(1, true);
+                robot.getHeading();
+                double startHeading = robot.getHeading();
+                double endHeading = startHeading - 45;
+                double degreesToGo = 45;
+                robot.getRightMotor().setPower(0);
+                robot.getLeftMotor().setPower(0.5);
+                while(opModeIsActive() && robot.getHeading() > endHeading);
+                {
+                    degreesToGo = robot.getHeading() - endHeading;
+
+                    setStatus(String.format("%. 1f degrees To Go ",
+                            degreesToGo));
+                    teamIdle();
+                }
+                robot.hookDown(1, false);
+                inchmove( 20, 0.5);
+                robot.stop();
         }
 }

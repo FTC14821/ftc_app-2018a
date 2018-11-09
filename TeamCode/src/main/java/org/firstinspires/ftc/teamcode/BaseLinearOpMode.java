@@ -76,6 +76,11 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
     public void teamIdle()
     {
+        if ( robot != null )
+        {
+            robot.healthCheck();
+        }
+
         telemetry.update();
         Thread.yield();
     }
