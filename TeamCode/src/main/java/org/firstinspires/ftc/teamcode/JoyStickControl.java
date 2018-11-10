@@ -6,11 +6,12 @@ import static java.lang.Math.abs;
 
 @TeleOp(name = "T: JoyStickControl", group = "Tinkering")
 
-public class JoyStickControl extends BaseOpMode {
+public class JoyStickControl extends TeleOpMode
+{
 
     @Override
-    public void loop() {
-        super.loop();
+    public void teleOpLoop() {
+        super.teleOpLoop();
 
         // Forward is positive
         double power = -gamepad1.left_stick_y;

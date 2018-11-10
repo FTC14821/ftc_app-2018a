@@ -9,6 +9,7 @@ import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class Robot  {
+    BaseLinearOpMode opMode;
     DcMotor M0;
     DcMotor M1;
     DcMotor armExtensionMotor;
@@ -20,21 +21,24 @@ public class Robot  {
     double currentLeftPower = 0;
     double currentRightPower = 0;
 
-    public final double MAX_HOOK_DISTANCE = 27500;
+    // Encoder when hook is at bottom
     double hook0;
+    // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
+    public final double MAX_HOOK_DISTANCE = 27500;
 
     TeamImu teamImu;
+
+    // Telemetry
+    String drivingCommand="";
+
+    private double hookSlowdown = 1;
+    private double armSlowdown = 1;
     private double drivingSlowDown=1;
 
-    private double armSlowdown= 1;
 
-    private double hookSlowdown= 1;
-
-    String motorCommand="";
-
-
-    public Robot(HardwareMap hardwareMap, Telemetry telemetry)
+    public Robot(BaseLinearOpMode baseLinearOpMode, HardwareMap hardwareMap, Telemetry telemetry)
     {
+        opMode = baseLinearOpMode;
         M0 = hardwareMap.dcMotor.get("M0");
         M1 = hardwareMap.dcMotor.get("M1");
 
@@ -51,26 +55,23 @@ public class Robot  {
         stop();
 
         setupRobotTelemetry(telemetry);
-        double change;
-        double oldValue = hookMotor.getCurrentPosition();
+
+
+        opMode.setOperation("Calibrating hook");
+        int change;
+        int oldValue = hookMotor.getCurrentPosition();
         setHookPower(-0.15);
 
         while (true)
         {
-            try
-            {
-                Thread.sleep(500);
-                telemetry.update();
-            }
-            catch (InterruptedException e)
-            {
-                break;
-            }
+            opMode.teamIdle();
+            opMode.sleep(250);
+            int newValue = hookMotor.getCurrentPosition();
+            change = newValue- oldValue;
+            oldValue = newValue;
 
-            change = hookMotor.getCurrentPosition() - oldValue;
-            oldValue = hookMotor.getCurrentPosition();
-
-            // If it hasn't changed much
+            opMode.setStatus(String.format("Position=%d, change=%d", newValue, change));
+            // If it isn't getting more negative
             if(change > -5)
             {
                 setHookPower(0);
@@ -79,6 +80,12 @@ public class Robot  {
         }
 
         hook0 = hookMotor.getCurrentPosition() + 500;
+        opMode.setStatus("Hook calibration done");
+    }
+
+    boolean shouldRobotKeepRunning()
+    {
+        return opMode.shouldOpModeKeepRunning();
     }
 
     private void setupRobotTelemetry(Telemetry telemetry)
@@ -87,7 +94,7 @@ public class Robot  {
 
                 .addData("Cmd", new Func<String>() {
                     @Override public String value() {
-                        return motorCommand;
+                        return drivingCommand;
                     }})
                 .addData("Orientation", new Func<String>() {
                     @Override public String value() {
@@ -126,14 +133,14 @@ public class Robot  {
 
     public void stop()
     {
-        motorCommand = "stop";
+        drivingCommand = "stop";
         setRightPower(0);
         setLeftPower(0);
     }
 
     public void driveStraight(double power)
     {
-        motorCommand = String.format("Straight(%.2f)",  power);
+        drivingCommand = String.format("Straight(%.2f)",  power);
         setLeftPower(power);
         setRightPower(power);
 
@@ -144,14 +151,14 @@ public class Robot  {
      */
     public void spin(double power)
     {
-        motorCommand = String.format("Spin%s(%.2f)", power > 0 ? "Right" : "Left", power);
+        drivingCommand = String.format("Spin%s(%.2f)", power > 0 ? "Right" : "Left", power);
         setLeftPower(power);
         setRightPower(-power);
     }
 
     public void setDrivingPowers(double leftPower, double rightPower)
     {
-        motorCommand = String.format("Set(%.2f,%.2f)", leftPower, rightPower);
+        drivingCommand = String.format("Set(%.2f,%.2f)", leftPower, rightPower);
         setLeftPower(leftPower);
         setRightPower(rightPower);
     }
@@ -257,7 +264,7 @@ public class Robot  {
      */
     void setPowerSteering(double power, double steering)
     {
-        motorCommand = String.format("Steer(%.2f, %.2f)", power, steering);
+        drivingCommand = String.format("Steer(%.2f, %.2f)", power, steering);
 
         double powerRight, powerLeft;
 
@@ -302,11 +309,7 @@ public class Robot  {
         mineralPlowServo.setPosition(0);
     }
 
-    public void hookActivate()
-    {
-
-    }
-
+    // Protect robot
     public void healthCheck()
     {
         if(!isHookPowerOK(hookMotor.getPower()))
@@ -331,17 +334,103 @@ public class Robot  {
     public void hookUp(double power, boolean wait){
         setHookPower(power);
         if(wait){
-         while (hookMotor.getPower() != 0){
-             healthCheck();;
+         while (shouldRobotKeepRunning() && hookMotor.getPower() != 0)
+         {
          }
         }
     }
-    public void hookDown(double power, boolean wait){
+    public void hookDown(double power, boolean wait)
+    {
         setHookPower(-Math.abs(power));
         if(wait){
-            while (hookMotor.getPower() != 0){
-                healthCheck();;
+            while (shouldRobotKeepRunning() && hookMotor.getPower() != 0)
+            {
             }
         }
     }
+
+    public void inchmove(double inches, double power)
+    {
+        opMode.setOperation(String.format("InchMove(%.1f, %.1f", inches, power));
+
+        double encoderClicksPerInch = 79.27;
+        double encoderClicks = inches*encoderClicksPerInch;
+        double stopPosition = getWheelPosition() + encoderClicks;
+
+        double startingHeading = getHeading();
+
+        while (shouldRobotKeepRunning() && getWheelPosition() <= stopPosition)
+        {
+            //Heading is larger to the left
+            double currentHeading = getHeading();
+            double headingError = startingHeading - currentHeading;
+
+            opMode.setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees",
+                    (stopPosition-getWheelPosition()) / encoderClicksPerInch,
+                    headingError));
+
+
+            if(headingError > 0.0)
+            {
+                //The current heading is too big so we turn to the left
+                setPowerSteering(power, -0.05);
+            }
+            else if(headingError < 0.0)
+            {
+                //Current heading is too small, so we steer to the right
+                setPowerSteering(power,  0.05);
+            }
+            else
+            {
+                // Go Straight
+                driveStraight(power);
+            }
+        }
+        stop();
+
+        opMode.setStatus("Done");
+
+    }
+
+
+    public void turnRight(double degrees, double speed)
+    {
+        opMode.setOperation(String.format("TurnRight(d=%.1f, s=%.1f", degrees, speed));
+        double turnApproximation=2;
+        double startingHeading = getHeading();
+        double endHeading = startingHeading - degrees + turnApproximation;
+        if (endHeading <= -180)
+        {
+            endHeading += 360;
+        }
+
+        double degreesToGo = -degrees;
+
+        while (shouldRobotKeepRunning() && degreesToGo < 0)
+        {
+            // Goal - Current
+            degreesToGo = endHeading - getHeading();
+
+            if (degreesToGo < -180)
+            {
+                degreesToGo += 360;
+            }
+            if (degreesToGo >= 180)
+            {
+                degreesToGo -= 360;
+            }
+            opMode.setStatus(String.format("%.1f degrees to go. ", degreesToGo));
+            if(degreesToGo>-20)
+            {
+                spin(0.2);
+            }
+            else
+            {
+                spin(speed);
+            }
+        }
+        opMode.setStatus("Right turn is done");
+        stop();
+    }
+
 }

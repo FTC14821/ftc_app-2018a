@@ -11,7 +11,8 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
     String phase="", step="", operation="", status="";
 
 
-    void teamInit()
+    // First thing to init
+    final void baseInit()
     {
         telemetry.addLine("Info:")
             .addData("Phase", new Func<String>() {
@@ -30,7 +31,6 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
                     return operation;
                 }})
             ;
-
         telemetry.addLine()
                 .addData("Status", new Func<String>() {
                     @Override
@@ -39,18 +39,33 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
                     }})
             ;
 
+        setStep("ContructingRobot");
+        robot = new Robot(this, hardwareMap, telemetry);
+        setStatus("Robot constructed");
     }
 
+    // Where OpModes can initialize themselves
+    void teamInit()
+    {
+
+    }
+
+    // What happens after Play is pressed
     abstract void teamRun();
 
 
     @Override
     public void runOpMode() throws InterruptedException {
-        robot = new Robot(hardwareMap, telemetry);
-
+        setPhase("Initializing");
+        baseInit();
         teamInit();
 
-        waitForStart();
+        setPhase("Waiting for start");
+
+        while ( !isStarted() )
+            teamIdle();
+
+        setPhase("Running");
         teamRun();
     }
 
@@ -62,7 +77,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
         long startTime_ms = System.currentTimeMillis();
         long stopTime_ms = startTime_ms + sleep_ms;
 
-        while ( opModeIsActive() && System.currentTimeMillis() < stopTime_ms )
+        while ( shouldOpModeKeepRunning() && System.currentTimeMillis() < stopTime_ms )
         {
             setStatus(String.format("nap time left: %d sec",
                     (stopTime_ms - System.currentTimeMillis())/1000));
@@ -82,7 +97,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
         }
 
         telemetry.update();
-        Thread.yield();
+        idle();
     }
 
 
@@ -105,93 +120,12 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
         this.status = status;
     }
 
+    // Team's version of opModeIsActive
+    // Checks robot health
 
-    void inchmove(double inches, double power)
+    public boolean shouldOpModeKeepRunning()
     {
-        setOperation(String.format("InchMove(%.1f, %.1f", inches, power));
-
-        double encoderClicksPerInch = 79.27;
-        double encoderClicks = inches*encoderClicksPerInch;
-        double stopPosition = robot.getWheelPosition() + encoderClicks;
-
-        double startingHeading = robot.getHeading();
-
-        while (opModeIsActive() && robot.getWheelPosition() <= stopPosition)
-        {
-            //Heading is larger to the left
-            double currentHeading = robot.getHeading();
-            double headingError = startingHeading - currentHeading;
-
-            setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees",
-                    (stopPosition-robot.getWheelPosition()) / encoderClicksPerInch,
-                    headingError));
-
-
-            if(headingError > 0.0)
-            {
-                //The current heading is too big so we turn to the left
-                robot.setPowerSteering(power, -0.05);
-            }
-            else if(headingError < 0.0)
-            {
-                //Current heading is too small, so we steer to the right
-                robot.setPowerSteering(power,  0.05);
-            }
-            else
-            {
-                // Go Straight
-                robot.driveStraight(power);
-            }
-
-            teamIdle();
-        }
-        robot.stop();
-
-        setStatus("Done");
-
-    }
-
-
-    void turnRight(double degrees, double speed)
-    {
-        setOperation(String.format("TurnRight(d=%.1f, s=%.1f", degrees, speed));
-        double turnApproximation=2;
-        double startingHeading = robot.getHeading();
-        double endHeading = startingHeading - degrees;
-        if (endHeading <= -180)
-        {
-            endHeading += 360;
-        }
-
-        double degreesToGo = degrees;
-
-        while (opModeIsActive() && robot.getHeading()> endHeading)
-        {
-            degreesToGo = robot.getHeading() - endHeading;
-            if (degreesToGo <= -180)
-            {
-                degreesToGo += 360;
-            }
-            if (degreesToGo > 180)
-            {
-                degreesToGo -= 360;
-            }
-            setStatus(String.format("%.1f degrees to go. ",
-                    degreesToGo));
-            if(degreesToGo<20)
-            {
-                robot.spin(0.15);
-            }
-            else
-            {
-                robot.spin(speed);
-            }
-
-            teamIdle();
-
-        }
-        setStatus("Right turn is done");
-        robot.stop();
-
+        teamIdle();
+        return opModeIsActive();
     }
 }

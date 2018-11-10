@@ -1,28 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-
 import org.firstinspires.ftc.robotcore.external.Func;
 
-abstract class BaseOpMode extends OpMode {
-    Robot robot;
-
-    void sleep(int msec)
-    {
-        try {
-            Thread.sleep(msec);
-        } catch (InterruptedException e) {
-        }
-    }
-
+abstract class TeleOpMode extends BaseLinearOpMode {
 
     @Override
-    public void init() {
-        this.msStuckDetectInit = 90000;
-        this.msStuckDetectInitLoop = 90000;
-
-        robot = new Robot(hardwareMap, telemetry);
-
+    public void teamInit() {
         telemetry.addLine("GP1:")
                 .addData("B", new Func<String>() {
                     @Override public String value() {
@@ -67,13 +50,6 @@ abstract class BaseOpMode extends OpMode {
     }
 
 
-    @Override
-    public void start()
-    {
-
-    }
-
-
     public double getArmExtensionSlowDown()
     {
         // Slowdown will be 1-->7
@@ -88,11 +64,43 @@ abstract class BaseOpMode extends OpMode {
         return armSwingSlowDown;
     }
 
+    public double getDrivingSlowDown()
+    {
+        // Slowdown will be 1-->5
+        double drivingSlowDown = 1 + gamepad1.left_trigger * 4;
+        return drivingSlowDown;
+    }
+
+    public double getHookSlowDown()
+    {
+        // Slowdown will be 1-->5
+        double hookSlowDown = 1 + (gamepad2.left_bumper ? 9 : 0);
+        return hookSlowDown;
+    }
+
+    // First TeleOp thing that happens after play button is pressed
+    public void teleOpStart()
+    {
+    }
+
+    // Convert LinearOpMode into OpMode
     @Override
-    public void loop() {
-        robot.healthCheck();
+    void teamRun()
+    {
+        teleOpStart();
+
+        while ( shouldOpModeKeepRunning() )
+        {
+            teleOpLoop();
+        }
+    }
+
+
+    // Called over and over until stop button is pressed
+    public void teleOpLoop() {
         robot.setDrivingSlowdown(getDrivingSlowDown());
         robot.setArmSlowdown(getArmExtensionSlowDown());
+        robot.setHookSlowdown(getHookSlowDown());
 
 
         if(gamepad1.back)
@@ -126,30 +134,16 @@ abstract class BaseOpMode extends OpMode {
         robot.setGrabberServoPosition(-gamepad2.right_stick_x);
         if(gamepad2.dpad_up)
         {
-            robot.setHookPower(1 / getHookSlowDown());
+            robot.setHookPower(1);
         }
         else if(gamepad2.dpad_down)
         {
-            robot.setHookPower(-1 / getHookSlowDown());
+            robot.setHookPower(-1);
         }
         else
         {
             robot.setHookPower(0);
         }
 
-    }
-
-    public double getDrivingSlowDown()
-    {
-        // Slowdown will be 1-->5
-        double drivingSlowDown = 1 + gamepad1.left_trigger * 4;
-        return drivingSlowDown;
-    }
-
-    public double getHookSlowDown()
-    {
-        // Slowdown will be 1-->5
-        double hookSlowDown = 1 + (gamepad2.left_bumper ? 9 : 0);
-        return hookSlowDown;
     }
 }

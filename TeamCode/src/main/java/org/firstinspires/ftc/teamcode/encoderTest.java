@@ -5,27 +5,28 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp(name = "T: encoderTest", group = "Tinkering")
 
-public class encoderTest extends BaseOpMode {
+public class encoderTest extends TeleOpMode
+{
 
     int startPosition, stopPosition;
 
     @Override
-    public void init() {
+    public void teamInit() {
         super.init();
 
         robot.setDrivingZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     @Override
-    public void start() {
-        super.start();
+    public void teleOpStart() {
+        super.teleOpStart();
         startPosition = robot.getWheelPosition();
         stopPosition = startPosition + 4000;
     }
 
     @Override
-    public void loop() {
-        super.loop();
+    public void teleOpLoop() {
+        super.teleOpLoop();
 
         int currentPosition = robot.getWheelPosition();
 

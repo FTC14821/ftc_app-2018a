@@ -102,7 +102,7 @@ public class TeamImu  {
             }
         });
 
-        telemetry.addLine("Orientation: ")
+        telemetry.addLine("IMU: ")
                 .addData("H", new Func<String>() {
                     @Override
                     public String value() {
