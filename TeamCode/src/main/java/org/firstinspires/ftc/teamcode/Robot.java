@@ -22,6 +22,7 @@ public class Robot  {
     double currentRightPower = 0;
 
     // Encoder when hook is at bottom
+    boolean hookCalibrated=false;
     double hook0;
     // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
     public final double MAX_HOOK_DISTANCE = 27500;
@@ -43,6 +44,7 @@ public class Robot  {
         M1 = hardwareMap.dcMotor.get("M1");
 
         mineralPlowServo = hardwareMap.servo.get("MineralPlowServo");
+        //mineralPlowServo.setPosition(0);
         grabberServo = hardwareMap.servo.get("GrabberServo");
         hookMotor = hardwareMap.dcMotor.get("HookMotor");
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
@@ -55,32 +57,6 @@ public class Robot  {
         stop();
 
         setupRobotTelemetry(telemetry);
-
-
-        opMode.setOperation("Calibrating hook");
-        int change;
-        int oldValue = hookMotor.getCurrentPosition();
-        setHookPower(-0.15);
-
-        while (true)
-        {
-            opMode.teamIdle();
-            opMode.sleep(250);
-            int newValue = hookMotor.getCurrentPosition();
-            change = newValue- oldValue;
-            oldValue = newValue;
-
-            opMode.setStatus(String.format("Position=%d, change=%d", newValue, change));
-            // If it isn't getting more negative
-            if(change > -5)
-            {
-                setHookPower(0);
-                break;
-            }
-        }
-
-        hook0 = hookMotor.getCurrentPosition() + 500;
-        opMode.setStatus("Hook calibration done");
     }
 
     boolean shouldRobotKeepRunning()
@@ -299,12 +275,12 @@ public class Robot  {
         this.hookSlowdown = hookSlowDown;
     }
 
-    public void mineralPlowUp()
+    public void mineralPlowDown()
     {
-        mineralPlowServo.setPosition(0.85);
+        mineralPlowServo.setPosition(-0.3);
     }
 
-    public void mineralPlowDown()
+    public void mineralPlowUp()
     {
         mineralPlowServo.setPosition(0);
     }
@@ -320,6 +296,9 @@ public class Robot  {
 
     private boolean isHookPowerOK(double powerToCheck)
     {
+        if (!hookCalibrated)
+            return true;
+
         if(hookMotor.getCurrentPosition() > hook0 + MAX_HOOK_DISTANCE && powerToCheck > 0)
         {
             return false;
@@ -433,4 +412,32 @@ public class Robot  {
         stop();
     }
 
+    public void calibrateHook()
+    {
+        opMode.setOperation("Calibrating hook");
+        int change;
+        int oldValue = hookMotor.getCurrentPosition();
+        setHookPower(-0.15);
+
+        while (true)
+        {
+            opMode.teamIdle();
+            opMode.sleep(250);
+            int newValue = hookMotor.getCurrentPosition();
+            change = newValue- oldValue;
+            oldValue = newValue;
+
+            opMode.setStatus(String.format("Position=%d, change=%d", newValue, change));
+            // If it isn't getting more negative
+            if(change > -5)
+            {
+                setHookPower(0);
+                break;
+            }
+        }
+
+        hook0 = hookMotor.getCurrentPosition() + 500;
+        hookCalibrated = true;
+        opMode.setStatus("Hook calibration done");
+    }
 }
