@@ -36,8 +36,14 @@ public class Autonomous_Land extends AutonomousOpMode
                 robot.hookUp(1, false);
                 robot.turnRight(15, 1);
                 robot.hookDown(1, false);
-                robot.inchmove( 50, 0.4);
+                robot.inchmove( 10, 0.4);
+                robot.stop();
+                robot.turnRight(345, 1);
+                robot.inchmove(30, 1);
+                robot.setArmExtensionPower(1);
+                teamSleep(2000);
                 robot.stop();
                 robot.hookDown(1, true);
+
         }
 }
