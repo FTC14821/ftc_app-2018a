@@ -9,11 +9,10 @@ public class Autonomous_Square extends AutonomousOpMode
         @Override
         void teamRun()
         {
-                for(int i=0; i<4; i++)
+                while(true)
                 {
                         robot.inchmove( 20, 0.3);
                         robot.turnRight(90, 0.4);
                 }
-                robot.stop();
         }
 }

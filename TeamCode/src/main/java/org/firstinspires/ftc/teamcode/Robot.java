@@ -21,6 +21,10 @@ public class Robot  {
     double currentLeftPower = 0;
     double currentRightPower = 0;
 
+    // Degrees turned to the right are negative
+    double totalDegreesTurned = 0;
+    double lastHeading = 0;
+
     // Encoder when hook is at bottom
     boolean hookCalibrated=false;
     double hook0;
@@ -35,6 +39,7 @@ public class Robot  {
     private double hookSlowdown = 1;
     private double armSlowdown = 1;
     private double drivingSlowDown=1;
+    public static final double ENCODER_CLICKS_PER_INCH = 79.27;
 
 
     public Robot(BaseLinearOpMode baseLinearOpMode, HardwareMap hardwareMap, Telemetry telemetry)
@@ -53,6 +58,9 @@ public class Robot  {
 
         teamImu = new TeamImu().initialize(hardwareMap, telemetry);
 
+        totalDegreesTurned = 0;
+        lastHeading = getImuHeading();
+
         setRobotOrientation(true);
         stop();
 
@@ -67,7 +75,10 @@ public class Robot  {
     private void setupRobotTelemetry(Telemetry telemetry)
     {
         telemetry.addLine("Robot: ")
-
+                .addData("TotDeg", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.1f", totalDegreesTurned);
+                    }})
                 .addData("Cmd", new Func<String>() {
                     @Override public String value() {
                         return drivingCommand;
@@ -174,8 +185,12 @@ public class Robot  {
         return M0.getCurrentPosition();
     }
 
+    public double getTotalDegreesTurned()
+    {
+        return totalDegreesTurned;
+    }
 
-    public double getHeading()
+    public double getImuHeading()
     {
         return teamImu.getHeading();
     }
@@ -292,6 +307,19 @@ public class Robot  {
         {
             hookMotor.setPower(0);
         }
+
+        // Accumulate degrees turned
+        double currentHeading = getImuHeading();
+        double degreesTurned = currentHeading - lastHeading;
+        lastHeading  = currentHeading;
+
+        // Watch for wrap around
+        if ( degreesTurned > 180 )
+            degreesTurned -= 360;
+        else if (degreesTurned < -180 )
+            degreesTurned += 360;
+
+        totalDegreesTurned += degreesTurned;
     }
 
     private boolean isHookPowerOK(double powerToCheck)
@@ -332,20 +360,19 @@ public class Robot  {
     {
         opMode.setOperation(String.format("InchMove(%.1f, %.1f", inches, power));
 
-        double encoderClicksPerInch = 79.27;
-        double encoderClicks = inches*encoderClicksPerInch;
+        double encoderClicks = inches* ENCODER_CLICKS_PER_INCH;
         double stopPosition = getWheelPosition() + encoderClicks;
 
-        double startingHeading = getHeading();
+        double startingHeading = getTotalDegreesTurned();
 
         while (shouldRobotKeepRunning() && getWheelPosition() <= stopPosition)
         {
             //Heading is larger to the left
-            double currentHeading = getHeading();
+            double currentHeading = getTotalDegreesTurned();
             double headingError = startingHeading - currentHeading;
 
             opMode.setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees",
-                    (stopPosition-getWheelPosition()) / encoderClicksPerInch,
+                    (stopPosition-getWheelPosition()) / ENCODER_CLICKS_PER_INCH,
                     headingError));
 
 
@@ -376,30 +403,18 @@ public class Robot  {
     {
         opMode.setOperation(String.format("TurnRight(d=%.1f, s=%.1f", degrees, speed));
         double turnApproximation=2;
-        double startingHeading = getHeading();
+        double startingHeading = getTotalDegreesTurned();
         double endHeading = startingHeading - degrees + turnApproximation;
-        if (endHeading <= -180)
-        {
-            endHeading += 360;
-        }
 
         double degreesToGo = -degrees;
 
         while (shouldRobotKeepRunning() && degreesToGo < 0)
         {
             // Goal - Current
-            degreesToGo = endHeading - getHeading();
+            degreesToGo = endHeading - getTotalDegreesTurned();
 
-            if (degreesToGo < -180)
-            {
-                degreesToGo += 360;
-            }
-            if (degreesToGo >= 180)
-            {
-                degreesToGo -= 360;
-            }
             opMode.setStatus(String.format("%.1f degrees to go. ", degreesToGo));
-            if(degreesToGo>-20)
+            if(degreesToGo > -20)
             {
                 spin(0.2);
             }

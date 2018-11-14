@@ -17,15 +17,15 @@ public class Autonomous_Land extends AutonomousOpMode
         void teamRun()
         {
 //                robot.hookUp(1, true);
-//                robot.getHeading();
-//                double startHeading = robot.getHeading();
+//                robot.getImuHeading();
+//                double startHeading = robot.getImuHeading();
 //                double endHeading = startHeading - 45;
 //                double degreesToGo = 45;
 //                robot.getRightMotor().setPower(0);
 //                robot.getLeftMotor().setPower(0.5);
-//                while(shouldOpModeKeepRunning() && robot.getHeading() > endHeading);
+//                while(shouldOpModeKeepRunning() && robot.getImuHeading() > endHeading);
 //                {
-//                    degreesToGo = robot.getHeading() - endHeading;
+//                    degreesToGo = robot.getImuHeading() - endHeading;
 //
 //                    setStatus(String.format("%. 1f degrees To Go ", degreesToGo));
 //                }
