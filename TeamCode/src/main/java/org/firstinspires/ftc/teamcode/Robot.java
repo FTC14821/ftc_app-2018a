@@ -9,6 +9,7 @@ import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class Robot  {
+    HardwareMap hardwareMap;
     BaseLinearOpMode opMode;
     DcMotor M0;
     DcMotor M1;
@@ -39,6 +40,7 @@ public class Robot  {
 
     public Robot(BaseLinearOpMode baseLinearOpMode, HardwareMap hardwareMap, Telemetry telemetry)
     {
+        this.hardwareMap = hardwareMap;
         opMode = baseLinearOpMode;
         M0 = hardwareMap.dcMotor.get("M0");
         M1 = hardwareMap.dcMotor.get("M1");
