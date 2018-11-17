@@ -132,6 +132,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
         robot.setArmExtensionPower(-gamepad2.left_stick_y / getArmExtensionSlowDown());
         robot.setGrabberServoPosition(-gamepad2.right_stick_x);
+        robot.setSwingArm(-gamepad2.right_stick_y);
         if(gamepad2.dpad_up)
         {
             robot.setHookPower(1);
@@ -144,6 +145,5 @@ abstract class TeleOpMode extends BaseLinearOpMode {
         {
             robot.setHookPower(0);
         }
-
     }
 }

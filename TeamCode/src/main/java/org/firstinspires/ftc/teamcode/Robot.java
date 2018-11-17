@@ -15,6 +15,7 @@ public class Robot  {
     DcMotor M1;
     DcMotor armExtensionMotor;
     DcMotor hookMotor;
+    DcMotor swingMotor;
     Servo grabberServo;
     Servo mineralPlowServo;
 
@@ -31,6 +32,8 @@ public class Robot  {
     double hook0;
     // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
     public final double MAX_HOOK_DISTANCE = 27500;
+    public final double MAX_SWING_ARM_DISTANCE = 27500;
+
 
     TeamImu teamImu;
 
@@ -57,6 +60,8 @@ public class Robot  {
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
         armExtensionMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         hookMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        swingMotor = hardwareMap.dcMotor.get("SwingMotor");
+        swingMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         teamImu = new TeamImu().initialize(hardwareMap, telemetry);
 
@@ -115,6 +120,14 @@ public class Robot  {
                 .addData("Hook", new Func<String>() {
                     @Override public String value() {
                         return String.format("%.1f@%d", hookMotor.getPower(), hookMotor.getCurrentPosition());
+                    }})
+                .addData("Arm Extension", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.1f@%d", armExtensionMotor.getPower(), armExtensionMotor.getCurrentPosition());
+                    }})
+                .addData("Arm Swing", new Func<String>() {
+                    @Override public String value() {
+                        return String.format("%.1f@%d", swingMotor.getPower(), swingMotor.getCurrentPosition());
                     }})
                 ;
     }
@@ -310,6 +323,10 @@ public class Robot  {
             hookMotor.setPower(0);
         }
 
+        if(!isSwingArmPowerOK((swingMotor.getPower()))){
+            swingMotor.setPower(0);
+        }
+
         // Accumulate degrees turned
         double currentHeading = getImuHeading();
         double degreesTurned = currentHeading - lastHeading;
@@ -334,6 +351,20 @@ public class Robot  {
             return false;
         }
         else if(hookMotor.getCurrentPosition() < hook0 && powerToCheck < 0)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isSwingArmPowerOK(double powerToCheck)
+    {
+
+        if(swingMotor.getCurrentPosition() > 0 + MAX_SWING_ARM_DISTANCE && powerToCheck > 0)
+        {
+            return false;
+        }
+        else if(swingMotor.getCurrentPosition() < 0 && powerToCheck < 0)
         {
             return false;
         }
@@ -404,7 +435,7 @@ public class Robot  {
     public void turnRight(double degrees, double speed)
     {
         opMode.setOperation(String.format("TurnRight(d=%.1f, s=%.1f", degrees, speed));
-        double turnApproximation=2;
+        double turnApproximation = 2;
         double startingHeading = getTotalDegreesTurned();
         double endHeading = startingHeading - degrees + turnApproximation;
 
@@ -426,6 +457,34 @@ public class Robot  {
             }
         }
         opMode.setStatus("Right turn is done");
+        stop();
+    }
+
+    public void turnLeft(double degrees, double speed)
+    {
+        opMode.setOperation(String.format("TurnLeft(d=%.1f, s=%.1f", degrees, speed));
+        double turnApproximation = 2;
+        double startingHeading = getTotalDegreesTurned();
+        double endHeading = startingHeading + degrees - turnApproximation;
+
+        double degreesToGo = degrees;
+
+        while (shouldRobotKeepRunning() && degreesToGo > 0)
+        {
+            // Goal - Current
+            degreesToGo = endHeading - getTotalDegreesTurned();
+
+            opMode.setStatus(String.format("%.1f degrees to go. ", degreesToGo));
+            if(degreesToGo < 20)
+            {
+                spin(0.2);
+            }
+            else
+            {
+                spin(speed);
+            }
+        }
+        opMode.setStatus("Turn left is done");
         stop();
     }
 
@@ -456,5 +515,13 @@ public class Robot  {
         hook0 = hookMotor.getCurrentPosition() + 500;
         hookCalibrated = true;
         opMode.setStatus("Hook calibration done");
+    }
+
+    public void setSwingArm(double power)
+    {
+        if(isSwingArmPowerOK(power))
+        {
+            swingMotor.setPower(power);
+        }
     }
 }
