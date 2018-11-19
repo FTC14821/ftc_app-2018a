@@ -10,6 +10,7 @@ import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class Robot {
+    public static final String ROBOT_TAG = "team14821";
     HardwareMap hardwareMap;
     BaseLinearOpMode opMode;
     DcMotor M0;
@@ -23,8 +24,6 @@ public class Robot {
     boolean safetysAreDisabled = false;
 
     boolean motorsInFront = true;
-    double currentLeftPower = 0;
-    double currentRightPower = 0;
 
     // Degrees turned to the right are negative
     double totalDegreesTurned = 0;
@@ -111,13 +110,13 @@ public class Robot {
                 .addData("L", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f@%d", currentLeftPower, getLeftMotor().getCurrentPosition());
+                        return String.format("%.1f@%d", getLeftMotor().getPower(), getLeftMotor().getCurrentPosition());
                     }
                 })
                 .addData("R", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f@%d", currentRightPower, getRightMotor().getCurrentPosition());
+                        return String.format("%.1f@%d", getRightMotor().getPower(), getRightMotor().getCurrentPosition());
                     }
                 })
                 .addData("M0", new Func<String>() {
@@ -167,10 +166,18 @@ public class Robot {
     }
 
     public void driveStraight(double power) {
-        drivingCommand = String.format("Straight(%.2f)", power);
+        setDrivingCommand("Straight(%.2f)", power);
+
         setLeftPower(power);
         setRightPower(power);
 
+    }
+
+    private void setDrivingCommand(String format, Object... args) {
+        String newDrivingCommand = String.format(format, args);
+        if ( !drivingCommand.equals(newDrivingCommand))
+            RobotLog.ww("team14821", "New driving command: %s", newDrivingCommand);
+        drivingCommand = newDrivingCommand;
     }
 
     /**
@@ -179,13 +186,13 @@ public class Robot {
      * @param power (-1..1) negative means to the left
      */
     public void spin(double power) {
-        drivingCommand = String.format("Spin%s(%.2f)", power > 0 ? "Right" : "Left", power);
+        setDrivingCommand("Spin%s(%.2f)", power > 0 ? "Right" : "Left", power);
         setLeftPower(power);
         setRightPower(-power);
     }
 
     public void setDrivingPowers(double leftPower, double rightPower) {
-        drivingCommand = String.format("Set(%.2f,%.2f)", leftPower, rightPower);
+        setDrivingCommand("Set(%.2f,%.2f)", leftPower, rightPower);
         setLeftPower(leftPower);
         setRightPower(rightPower);
     }
@@ -228,8 +235,10 @@ public class Robot {
         setRobotOrientation(!motorsInFront);
     }
 
-    public void setRobotOrientation(boolean armFacesForward) {
-        this.motorsInFront = armFacesForward;
+    public void setRobotOrientation(boolean motorsInFront) {
+        RobotLog.ww("team14821", "Setting robot orientation: %s", motorsInFront ? "MotorsInFront" : "MotorsInBack");
+
+        this.motorsInFront = motorsInFront;
         getRightMotor().setDirection(DcMotorSimple.Direction.REVERSE);
         getLeftMotor().setDirection(DcMotorSimple.Direction.FORWARD);
     }
@@ -252,7 +261,7 @@ public class Robot {
             RobotLog.ww("team14821","Setting arm extension power to %.2f", power);
         }
 
-        if (isArmPowerOK(power)) {
+        if (isArmExtensionPowerOK(power)) {
             armExtensionMotor.setPower(power);
         }
     }
@@ -274,14 +283,14 @@ public class Robot {
     }
 
     private void setLeftPower(double leftPower) {
-        currentLeftPower = leftPower;
-
+        if ( leftPower != getLeftMotor().getPower() )
+            RobotLog.ww("team14821", "Setting left power to %0.2f", leftPower);
         getLeftMotor().setPower(leftPower);
     }
 
     private void setRightPower(double rightPower) {
-        this.currentRightPower = rightPower;
-
+        if ( rightPower != getRightMotor().getPower() )
+            RobotLog.ww("team14821", "Setting right power to %0.2f", rightPower);
         getRightMotor().setPower(rightPower);
     }
 
@@ -290,7 +299,7 @@ public class Robot {
      * @param steering Positive steering is to the right, negative steering is to the left (between -1, 1)
      */
     void setPowerSteering(double power, double steering) {
-        drivingCommand = String.format("Steer(%.2f, %.2f)", power, steering);
+        setDrivingCommand("Steer(%.2f, %.2f)", power, steering);
 
         double powerRight, powerLeft;
 
@@ -312,16 +321,19 @@ public class Robot {
 
 
     public void mineralPlowDown() {
+        RobotLog.ww("team14821", "Setting mineral plow down");
+
         mineralPlowServo.setPosition(-0.3);
     }
 
     public void mineralPlowUp() {
+        RobotLog.ww(ROBOT_TAG, "Setting mineral plow up");
         mineralPlowServo.setPosition(0);
     }
 
     // Protect robot
     public void healthCheck() {
-        if (!isArmPowerOK(armExtensionMotor.getPower())) {
+        if (!isArmExtensionPowerOK(armExtensionMotor.getPower())) {
             armExtensionMotor.setPower(0);
         }
 
@@ -348,47 +360,72 @@ public class Robot {
     }
 
     private boolean isHookPowerOK(double powerToCheck) {
+        boolean result;
+
         if(safetysAreDisabled)
-            return true;
+            result = true;
 
-        if (!hookCalibrated)
-            return true;
+        else if (!hookCalibrated)
+            result = true;
 
-        if (hookMotor.getCurrentPosition() > hook0 + MAX_HOOK_DISTANCE && powerToCheck > 0) {
-            return false;
+        else if (hookMotor.getCurrentPosition() > hook0 + MAX_HOOK_DISTANCE && powerToCheck > 0) {
+            result = false;
         } else if (hookMotor.getCurrentPosition() < hook0 && powerToCheck < 0) {
-            return false;
+            result = false;
         }
-        return true;
+        else
+            result = true;
+
+        if ( !result )
+            RobotLog.ww(ROBOT_TAG, "Hook power %.2f IS NOT OKAY at position %d", powerToCheck, hookMotor.getCurrentPosition());
+
+        return result;
     }
 
     private boolean isSwingArmPowerOK(double powerToCheck) {
-        if(safetysAreDisabled)
-            return true;
+        boolean result;
 
-        if (swingMotor.getCurrentPosition() > swing0 + MAX_SWING_ARM_DISTANCE && powerToCheck > 0) {
-            return false;
+        if(safetysAreDisabled)
+            result = true;
+
+        else if (swingMotor.getCurrentPosition() > swing0 + MAX_SWING_ARM_DISTANCE && powerToCheck > 0) {
+            result = false;
         } else if (swingMotor.getCurrentPosition() < swing0 && powerToCheck < 0) {
-            return false;
+            result = false;
         }
-        return true;
+        else
+            result = true;
+
+        if ( !result )
+            RobotLog.ww(ROBOT_TAG, "Swing arm power %.2f IS NOT OKAY at position %d", powerToCheck, swingMotor.getCurrentPosition());
+
+        return result;
     }
 
-    private boolean isArmPowerOK(double powerToCheck) {
-        if(safetysAreDisabled)
-            return true;
+    private boolean isArmExtensionPowerOK(double powerToCheck) {
+        boolean result;
 
-        if (armExtensionMotor.getCurrentPosition() > extension0 + MAX_ARM_EXTENSION_DISTANCE && powerToCheck > 0) {
-            return false;
+        if(safetysAreDisabled)
+            result = true;
+
+        else if (armExtensionMotor.getCurrentPosition() > extension0 + MAX_ARM_EXTENSION_DISTANCE && powerToCheck > 0) {
+            result = false;
         } else if (armExtensionMotor.getCurrentPosition() < extension0 && powerToCheck < 0) {
-            return false;
+            result = false;
         }
-        return true;
+        else
+            result = true;
+
+        if ( !result )
+            RobotLog.ww(ROBOT_TAG, "Arm extension power %.2f IS NOT OKAY at position %d", powerToCheck, armExtensionMotor.getCurrentPosition());
+
+        return result;
     }
 
     public void hookUp(double power, boolean wait) {
         setHookPower(power);
         if (wait) {
+            // Wait until the safety stops the hookMotor
             while (shouldRobotKeepRunning() && hookMotor.getPower() != 0) {
             }
         }
@@ -491,7 +528,7 @@ public class Robot {
         int oldValue = hookMotor.getCurrentPosition();
         setHookPower(-0.15);
 
-        while (true) {
+        while (shouldRobotKeepRunning()) {
             opMode.teamIdle();
             opMode.sleep(250);
             int newValue = hookMotor.getCurrentPosition();
@@ -516,7 +553,7 @@ public class Robot {
         int oldValue = swingMotor.getCurrentPosition();
         setSwingArm(-0.15);
 
-        while (true) {
+        while (shouldRobotKeepRunning()) {
             opMode.teamIdle();
             opMode.sleep(250);
             int newValue = swingMotor.getCurrentPosition();
