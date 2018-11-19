@@ -123,10 +123,11 @@ public class CameraController  {
         camera.setParameters(parameters);
 
         data = parameters.flatten();
-
-        if (preview == null) {
+/*
+        if(preview == null) {
             ((FtcRobotControllerActivity) hardwareMap.appContext).initPreviewLinear(camera, this, previewCallback);
         }
+*/
     }
 
     public void stopCameraInSecs(int duration) {
@@ -157,7 +158,7 @@ public class CameraController  {
     public void stopCamera() {
         if (camera != null) {
             if (preview != null) {
-                ((FtcRobotControllerActivity) hardwareMap.appContext).removePreviewLinear(this);
+                //((FtcRobotControllerActivity) hardwareMap.appContext).removePreviewLinear(this);
                 preview = null;
             }
             camera.stopPreview();

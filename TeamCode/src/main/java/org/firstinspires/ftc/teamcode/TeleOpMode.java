@@ -50,34 +50,6 @@ abstract class TeleOpMode extends BaseLinearOpMode {
     }
 
 
-    public double getArmExtensionSlowDown()
-    {
-        // Slowdown will be 1-->7
-        double armSlowDown = 1 + (gamepad2.right_bumper ? 6 : 0);
-        return armSlowDown;
-    }
-
-    public double getArmSwingSlowDown()
-    {
-        // Slowdown will be 1-->7
-        double armSwingSlowDown = 1 + (gamepad2.left_bumper ? 1 : 0);
-        return armSwingSlowDown;
-    }
-
-    public double getDrivingSlowDown()
-    {
-        // Slowdown will be 1-->5
-        double drivingSlowDown = 1 + gamepad1.left_trigger * 4;
-        return drivingSlowDown;
-    }
-
-    public double getHookSlowDown()
-    {
-        // Slowdown will be 1-->5
-        double hookSlowDown = 1 + (gamepad2.left_bumper ? 9 : 0);
-        return hookSlowDown;
-    }
-
     // First TeleOp thing that happens after play button is pressed
     public void teleOpStart()
     {
@@ -89,7 +61,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
     {
         teleOpStart();
 
-        while ( shouldOpModeKeepRunning() )
+        while (shouldOpModeKeepRunning())
         {
             teleOpLoop();
         }
@@ -98,17 +70,31 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
     // Called over and over until stop button is pressed
     public void teleOpLoop() {
-        robot.setDrivingSlowdown(getDrivingSlowDown());
-        robot.setArmSlowdown(getArmExtensionSlowDown());
-        robot.setHookSlowdown(getHookSlowDown());
+        if(gamepad2.x)
+        {
+            robot.safetysAreDisabled = true;
+        }
+        else
+        {
+            robot.safetysAreDisabled = false;
+        }
 
+        if(gamepad2.y)
+        {
+            robot.calibrateEverything();
+
+            while(shouldOpModeKeepRunning() && gamepad2.y)
+            {
+                sleep(1);
+            }
+        }
 
         if(gamepad1.back)
         {
             robot.reverseRobotOrientation();
 
             //Wait until button is released before switching front and back
-            while (gamepad1.back)
+            while(shouldOpModeKeepRunning() && gamepad1.back)
             {
                 sleep(1);
             }
@@ -129,17 +115,26 @@ abstract class TeleOpMode extends BaseLinearOpMode {
                 robot.mineralPlowServo.setPosition(0);
             }
         }
+        if(gamepad2.right_bumper)
+            robot.setArmExtensionPower(-gamepad2.left_stick_y / 4);
+        else
+            robot.setArmExtensionPower(-gamepad2.left_stick_y);
 
-        robot.setArmExtensionPower(-gamepad2.left_stick_y / getArmExtensionSlowDown());
-        robot.setGrabberServoPosition(-gamepad2.right_stick_x);
-        robot.setSwingArm(-gamepad2.right_stick_y);
+        robot.setSwingArm(-gamepad2.right_stick_y / 4);
+
+        double hookPower;
+        if(gamepad2.left_bumper)
+            hookPower = 0.2;
+        else
+            hookPower = 1;
+
         if(gamepad2.dpad_up)
         {
-            robot.setHookPower(1);
+            robot.setHookPower(hookPower);
         }
         else if(gamepad2.dpad_down)
         {
-            robot.setHookPower(-1);
+            robot.setHookPower(-hookPower);
         }
         else
         {

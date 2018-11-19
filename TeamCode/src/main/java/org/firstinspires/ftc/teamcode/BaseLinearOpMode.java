@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Func;
 
@@ -62,7 +63,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
         setPhase("Waiting for start");
 
-        while ( !isStarted() )
+        while (!isStarted())
             teamIdle();
 
         setPhase("Running");
@@ -77,7 +78,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
         long startTime_ms = System.currentTimeMillis();
         long stopTime_ms = startTime_ms + sleep_ms;
 
-        while ( shouldOpModeKeepRunning() && System.currentTimeMillis() < stopTime_ms )
+        while (shouldOpModeKeepRunning() && System.currentTimeMillis() < stopTime_ms)
         {
             setStatus(String.format("nap time left: %d sec",
                     (stopTime_ms - System.currentTimeMillis())/1000));
@@ -91,7 +92,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
     public void teamIdle()
     {
-        if ( robot != null )
+        if (robot != null)
         {
             robot.healthCheck();
         }
@@ -103,21 +104,25 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
     public void setPhase(String phase) {
         this.phase = phase;
+        RobotLog.ww("team14821", "Staring Phase: %s", phase);
         setStep("");
     }
 
     public void setStep(String step) {
         this.step = step;
+        RobotLog.ww("team14821", "Starting Step: %s", step);
         setOperation("");
     }
 
     public void setOperation(String operation) {
         this.operation = operation;
+        RobotLog.ww("team14821","Starting Operation: %s", operation);
         setStatus("");
     }
 
     public void setStatus(String status) {
         this.status = status;
+        RobotLog.ww("team14821", "Status: %s", status);
     }
 
     // Team's version of opModeIsActive
