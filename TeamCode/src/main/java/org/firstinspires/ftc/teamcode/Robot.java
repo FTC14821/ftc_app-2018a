@@ -284,13 +284,13 @@ public class Robot {
 
     private void setLeftPower(double leftPower) {
         if ( leftPower != getLeftMotor().getPower() )
-            RobotLog.ww("team14821", "Setting left power to %0.2f", leftPower);
+            RobotLog.ww("team14821", "Setting left power to %.2f", leftPower);
         getLeftMotor().setPower(leftPower);
     }
 
     private void setRightPower(double rightPower) {
         if ( rightPower != getRightMotor().getPower() )
-            RobotLog.ww("team14821", "Setting right power to %0.2f", rightPower);
+            RobotLog.ww("team14821", "Setting right power to %.2f", rightPower);
         getRightMotor().setPower(rightPower);
     }
 
@@ -568,7 +568,7 @@ public class Robot {
             }
         }
 
-        swing0 = swingMotor.getCurrentPosition() + 500;
+        swing0 = swingMotor.getCurrentPosition() + 0;
         armSwingCalibrated = true;
         opMode.setStatus("Arm swing calibration done");
     }
