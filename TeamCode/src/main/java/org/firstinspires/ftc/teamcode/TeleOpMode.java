@@ -100,27 +100,12 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             }
         }
 
-        if(gamepad1.right_bumper)
-        {
-            while(gamepad1.right_bumper)
-            {
-
-            }
-            if(robot.mineralPlowServo.getPosition() == 0)
-            {
-                robot.mineralPlowServo.setPosition(0.85);
-            }
-            else if(robot.mineralPlowServo.getPosition() > 0.8)
-            {
-                robot.mineralPlowServo.setPosition(0);
-            }
-        }
         if(gamepad2.right_bumper)
             robot.setArmExtensionPower(-gamepad2.left_stick_y / 4);
         else
             robot.setArmExtensionPower(-gamepad2.left_stick_y);
 
-        robot.setSwingArm(-gamepad2.right_stick_y / 4);
+        robot.setSwingArmPower(-gamepad2.right_stick_y);
 
         double hookPower;
         if(gamepad2.left_bumper)

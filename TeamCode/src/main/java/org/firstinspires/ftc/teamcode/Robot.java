@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Func;
@@ -18,8 +17,6 @@ public class Robot {
     DcMotor armExtensionMotor;
     DcMotor hookMotor;
     DcMotor swingMotor;
-    Servo grabberServo;
-    Servo mineralPlowServo;
 
     boolean safetysAreDisabled = false;
 
@@ -40,7 +37,7 @@ public class Robot {
     double hook0;
     // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
     public final double MAX_HOOK_DISTANCE = 27500;
-    public final double MAX_SWING_ARM_DISTANCE = 2300;
+    public final double MAX_SWING_ARM_DISTANCE = 2200;
     public final double MAX_ARM_EXTENSION_DISTANCE = 12800;
 
 
@@ -58,9 +55,6 @@ public class Robot {
         M0 = hardwareMap.dcMotor.get("M0");
         M1 = hardwareMap.dcMotor.get("M1");
 
-        mineralPlowServo = hardwareMap.servo.get("MineralPlowServo");
-        //mineralPlowServo.setPosition(0);
-        grabberServo = hardwareMap.servo.get("GrabberServo");
         hookMotor = hardwareMap.dcMotor.get("HookMotor");
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
         armExtensionMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -129,12 +123,6 @@ public class Robot {
                     @Override
                     public String value() {
                         return String.format("%.1f@%d", M1.getPower(), M1.getCurrentPosition());
-                    }
-                })
-                .addData("Plow", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%.1f", mineralPlowServo.getPosition());
                     }
                 })
                 .addData("Hook", new Func<String>() {
@@ -244,7 +232,7 @@ public class Robot {
     }
 
     public void setHookPower(double power) {
-        if(hookMotor.getPower() != power)
+        if( powersAreDifferent(hookMotor.getPower(), power) )
         {
             RobotLog.ww("team14821","Setting hook power to %.2f", power);
         }
@@ -256,40 +244,124 @@ public class Robot {
 
 
     public void setArmExtensionPower(double power) {
-        if(armExtensionMotor.getPower() != power)
+        if(powersAreDifferent(armExtensionMotor.getPower(), power))
         {
             RobotLog.ww("team14821","Setting arm extension power to %.2f", power);
         }
 
-        if (isArmExtensionPowerOK(power)) {
+        if(isArmExtensionPowerOK(power)) {
             armExtensionMotor.setPower(power);
         }
     }
 
-    public void setSwingArm(double power) {
-        if(swingMotor.getPower() != power)
+    public void setSwingArmPower(double power)
+    {
+        if (!isSwingArmPowerOK(power))
         {
-            RobotLog.ww("team14821","Setting swing arm power to %.2f", power);
+            return;
         }
 
-        if(isSwingArmPowerOK(power)) {
-            swingMotor.setPower(power);
+        // Zero power is simple
+        if ( power == 0 )
+        {
+            setArmSwingPower_raw(0,0);
+            return;
         }
+
+        boolean directionIsUp;
+        if(power > 0)
+            directionIsUp = true;
+        else
+            directionIsUp = false;
+
+
+        // When not calibrated:  Power/4
+        if ( !armSwingCalibrated )
+        {
+            setArmSwingPower_raw(power, 1.0/4);
+            return;
+        }
+
+        double powerMultiple = 1.0 / 3;
+        int zone;
+        boolean armIsExtended;
+        if(armExtensionMotor.getCurrentPosition() >= extension0 + MAX_ARM_EXTENSION_DISTANCE / 3)
+            armIsExtended = true;
+        else
+            armIsExtended = false;
+
+
+        int armLocation = swingMotor.getCurrentPosition();
+
+        if(armLocation < swing0 + 1000)
+            zone = 1;
+        else if(armLocation >= swing0 + 1000 && armLocation < swing0 + 1150)
+            zone = 2;
+        else
+            zone = 3;
+
+        if(zone == 1)
+        {
+            if(!directionIsUp)
+            {
+                powerMultiple /= 4;
+
+                if (armIsExtended)
+                    powerMultiple /= 8;
+            }
+        }
+
+        if(zone == 2)
+        {
+            if(!directionIsUp)
+            {
+                if(armIsExtended)
+                    powerMultiple /= 4;
+                else
+                    powerMultiple /= 3;
+            }
+            else
+                powerMultiple /= 3;
+
+        }
+
+        if(zone == 3)
+        {
+            if(directionIsUp)
+            {
+                powerMultiple /= 3;
+
+                if (armIsExtended)
+                    powerMultiple /= 4;
+            }
+        }
+
+        setArmSwingPower_raw(power, powerMultiple);
     }
 
-    public void setGrabberServoPosition(double position) {
-        grabberServo.setPosition(position);
 
+    private void setArmSwingPower_raw(double power, double powerMultiple)
+    {
+        double actualPower = power * powerMultiple;
+        if ( powersAreDifferent(actualPower, swingMotor.getPower()) )
+            RobotLog.ww("team14821", "Setting arm-swing power to %.2f (%.2f x %.2f)", actualPower, power, powerMultiple);
+        swingMotor.setPower(actualPower);
     }
 
     private void setLeftPower(double leftPower) {
-        if ( leftPower != getLeftMotor().getPower() )
+        if ( powersAreDifferent(leftPower, getLeftMotor().getPower()) )
             RobotLog.ww("team14821", "Setting left power to %.2f", leftPower);
         getLeftMotor().setPower(leftPower);
     }
 
+    private boolean powersAreDifferent(double power1, double power2)
+    {
+        // Compare powers to 2 decimal places (multiply by 100 and remove remaining decimals)
+        return  Math.floor(power1*100) != Math.floor(power2*100);
+    }
+
     private void setRightPower(double rightPower) {
-        if ( rightPower != getRightMotor().getPower() )
+        if ( powersAreDifferent(rightPower, getRightMotor().getPower()) )
             RobotLog.ww("team14821", "Setting right power to %.2f", rightPower);
         getRightMotor().setPower(rightPower);
     }
@@ -317,18 +389,6 @@ public class Robot {
 
         setLeftPower(powerLeft);
         setRightPower(powerRight);
-    }
-
-
-    public void mineralPlowDown() {
-        RobotLog.ww("team14821", "Setting mineral plow down");
-
-        mineralPlowServo.setPosition(-0.3);
-    }
-
-    public void mineralPlowUp() {
-        RobotLog.ww(ROBOT_TAG, "Setting mineral plow up");
-        mineralPlowServo.setPosition(0);
     }
 
     // Protect robot
@@ -417,7 +477,8 @@ public class Robot {
             result = true;
 
         if ( !result )
-            RobotLog.ww(ROBOT_TAG, "Arm extension power %.2f IS NOT OKAY at position %d", powerToCheck, armExtensionMotor.getCurrentPosition());
+            RobotLog.ww(ROBOT_TAG, "Arm extension power" +
+                    " %.2f IS NOT OKAY at position %d", powerToCheck, armExtensionMotor.getCurrentPosition());
 
         return result;
     }
@@ -523,6 +584,8 @@ public class Robot {
 
     // Calibrations
     public void calibrateHook() {
+        stop();
+        safetysAreDisabled = true;
         opMode.setOperation("Calibrating hook");
         int change;
         int oldValue = hookMotor.getCurrentPosition();
@@ -545,17 +608,20 @@ public class Robot {
         hook0 = hookMotor.getCurrentPosition() + 500;
         hookCalibrated = true;
         opMode.setStatus("Hook calibration done");
+        safetysAreDisabled = false;
     }
 
     public void calibrateArmSwing() {
+        stop();
+        safetysAreDisabled = true;
         opMode.setOperation("Calibrating arm swing");
         int change;
         int oldValue = swingMotor.getCurrentPosition();
-        setSwingArm(-0.15);
+        swingMotor.setPower(-0.3);
 
         while (shouldRobotKeepRunning()) {
             opMode.teamIdle();
-            opMode.sleep(250);
+            opMode.sleep(500);
             int newValue = swingMotor.getCurrentPosition();
             change = newValue - oldValue;
             oldValue = newValue;
@@ -563,7 +629,7 @@ public class Robot {
             opMode.setStatus(String.format("Position=%d, change=%d", newValue, change));
             // If it isn't getting more negative
             if (change > -5) {
-                setHookPower(0);
+                setSwingArmPower(0);
                 break;
             }
         }
@@ -571,9 +637,12 @@ public class Robot {
         swing0 = swingMotor.getCurrentPosition() + 0;
         armSwingCalibrated = true;
         opMode.setStatus("Arm swing calibration done");
+        safetysAreDisabled = false;
     }
 
     public void calibrateArmExtension() {
+        stop();
+        safetysAreDisabled = true;
         opMode.setOperation("Calibrating arm extension");
         int change;
         int oldValue = armExtensionMotor.getCurrentPosition();
@@ -598,6 +667,7 @@ public class Robot {
         extension0 = armExtensionMotor.getCurrentPosition() + 500;
         armExtensionCalibrated = true;
         opMode.setStatus("Arm extension calibration done");
+        safetysAreDisabled = false;
     }
 
     public void calibrateEverything()
