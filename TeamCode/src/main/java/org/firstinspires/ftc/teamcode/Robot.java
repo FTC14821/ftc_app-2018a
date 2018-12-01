@@ -28,13 +28,13 @@ public class Robot {
 
     // Encoder when arm extension is at the top
     boolean armExtensionCalibrated = false;
-    double extension0;
+    int extension0;
     // Encoder when arm swing is at the bottom
     boolean armSwingCalibrated = false;
-    double swing0;
+    int swing0;
     // Encoder when hook is at bottom
     boolean hookCalibrated = false;
-    double hook0;
+    int hook0;
     // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
     public final double MAX_HOOK_DISTANCE = 27500;
     public final double MAX_SWING_ARM_DISTANCE = 2200;
@@ -100,47 +100,36 @@ public class Robot {
                 })
         ;
 
-        telemetry.addLine("Motors: ")
-                .addData("L", new Func<String>() {
+        telemetry.addLine("Driving: ")
+                .addData(String.format("L/%s", getLeftMotor()==M0 ? "M0" : "M1"), new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f@%d", getLeftMotor().getPower(), getLeftMotor().getCurrentPosition());
+                        return String.format("%+.1f@%d", getLeftMotor().getPower(), getLeftMotor().getCurrentPosition());
                     }
                 })
-                .addData("R", new Func<String>() {
+                .addData(String.format("R/%s", getRightMotor()==M0 ? "M0" : "M1"), new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f@%d", getRightMotor().getPower(), getRightMotor().getCurrentPosition());
+                        return String.format("%+.1f@%d", getRightMotor().getPower(), getRightMotor().getCurrentPosition());
                     }
-                })
-                .addData("M0", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%.1f@%d", M0.getPower(), M0.getCurrentPosition());
-                    }
-                })
-                .addData("M1", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%.1f@%d", M1.getPower(), M1.getCurrentPosition());
-                    }
-                })
+                });
+        telemetry.addLine()
                 .addData("Hook", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f@%d", hookMotor.getPower(), hookMotor.getCurrentPosition());
+                        return String.format("%+.1f@%d z=%d", hookMotor.getPower(), hookMotor.getCurrentPosition(), hook0);
                     }
                 })
-                .addData("Arm Extension", new Func<String>() {
+                .addData("Arm Ext", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f@%d", armExtensionMotor.getPower(), armExtensionMotor.getCurrentPosition());
+                        return String.format("%+.1f@%d z=%d", armExtensionMotor.getPower(), armExtensionMotor.getCurrentPosition(), extension0);
                     }
                 })
                 .addData("Arm Swing", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f@%d", swingMotor.getPower(), swingMotor.getCurrentPosition());
+                        return String.format("%+.1f@%d z=%d", swingMotor.getPower(), swingMotor.getCurrentPosition(), swing0);
                     }
                 })
         ;
@@ -180,7 +169,7 @@ public class Robot {
     }
 
     public void setDrivingPowers(double leftPower, double rightPower) {
-        setDrivingCommand("Set(%.2f,%.2f)", leftPower, rightPower);
+        setDrivingCommand("SetDrivingPowers(%.2f,%.2f)", leftPower, rightPower);
         setLeftPower(leftPower);
         setRightPower(rightPower);
     }
@@ -282,7 +271,7 @@ public class Robot {
             return;
         }
 
-        double powerMultiple = 1.0 / 3;
+        double powerMultiple = 1.0;
         int zone;
         boolean armIsExtended;
         if(armExtensionMotor.getCurrentPosition() >= extension0 + MAX_ARM_EXTENSION_DISTANCE / 3)
@@ -307,8 +296,10 @@ public class Robot {
                 powerMultiple /= 4;
 
                 if (armIsExtended)
-                    powerMultiple /= 8;
+                    powerMultiple /= 10;
             }
+            else
+                powerMultiple /= 2;
         }
 
         if(zone == 2)
@@ -329,11 +320,13 @@ public class Robot {
         {
             if(directionIsUp)
             {
-                powerMultiple /= 3;
+                powerMultiple /= 4;
 
                 if (armIsExtended)
-                    powerMultiple /= 4;
+                    powerMultiple /= 5;
             }
+            else
+                powerMultiple /= 2;
         }
 
         setArmSwingPower_raw(power, powerMultiple);
@@ -617,11 +610,10 @@ public class Robot {
         opMode.setOperation("Calibrating arm swing");
         int change;
         int oldValue = swingMotor.getCurrentPosition();
-        swingMotor.setPower(-0.3);
+        setArmSwingPower_raw(-0.3, 1.0);
 
         while (shouldRobotKeepRunning()) {
-            opMode.teamIdle();
-            opMode.sleep(500);
+            opMode.sleep(250);
             int newValue = swingMotor.getCurrentPosition();
             change = newValue - oldValue;
             oldValue = newValue;
@@ -629,12 +621,15 @@ public class Robot {
             opMode.setStatus(String.format("Position=%d, change=%d", newValue, change));
             // If it isn't getting more negative
             if (change > -5) {
-                setSwingArmPower(0);
+                setArmSwingPower_raw(0, 0);
                 break;
             }
         }
 
-        swing0 = swingMotor.getCurrentPosition() + 0;
+        // Let the foam spring back
+        opMode.sleep(1000);
+
+        swing0 = swingMotor.getCurrentPosition() + 50;
         armSwingCalibrated = true;
         opMode.setStatus("Arm swing calibration done");
         safetysAreDisabled = false;
@@ -651,7 +646,7 @@ public class Robot {
         setArmExtensionPower(-0.1);
 
         while (shouldRobotKeepRunning()) {
-            opMode.sleep(500);
+            opMode.sleep(250);
             int newValue = armExtensionMotor.getCurrentPosition();
             change = newValue - oldValue;
             oldValue = newValue;
