@@ -20,7 +20,7 @@ public class Autonomous_One_Mineral extends AutonomousOpMode
                 robot.turnRight(15, 1);
                 robot.hookDown(1, false);
                 robot.inchmove( 5, 0.4);
-                robot.stop();
+                robot.stop(false);
                 robot.turnLeft(60, 1);
                 robot.inchmove(30, 1);
                 robot.turnLeft(90, 1);

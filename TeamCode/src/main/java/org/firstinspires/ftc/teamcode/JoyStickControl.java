@@ -19,10 +19,13 @@ public class JoyStickControl extends TeleOpMode
         // Left is negative
         double steering = gamepad1.left_stick_x;
 
+        if(gamepad1.left_trigger > 0)
+            power /= 2;
+
         //Joystick Control
         if ( power == 0 && steering == 0 )
         {
-            robot.stop();
+            robot.stop(false);
         }
         else if(abs(power) < 0.1)
         {

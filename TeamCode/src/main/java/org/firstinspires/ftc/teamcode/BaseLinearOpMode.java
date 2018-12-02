@@ -63,7 +63,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
         setPhase("Waiting for start");
 
-        while (!isStarted())
+        while(!isStarted())
             teamIdle();
 
         setPhase("Running");
@@ -78,7 +78,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
         long startTime_ms = System.currentTimeMillis();
         long stopTime_ms = startTime_ms + sleep_ms;
 
-        while (shouldOpModeKeepRunning() && System.currentTimeMillis() < stopTime_ms)
+        while(shouldOpModeKeepRunning() && System.currentTimeMillis() < stopTime_ms)
         {
             setStatus(String.format("nap time left: %d sec",
                     (stopTime_ms - System.currentTimeMillis())/1000));
@@ -92,10 +92,8 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
     public void teamIdle()
     {
-        if (robot != null)
-        {
-            robot.healthCheck();
-        }
+        if(robot != null)
+            robot.loop();
 
         telemetry.update();
         idle();

@@ -4,6 +4,8 @@ import org.firstinspires.ftc.robotcore.external.Func;
 
 abstract class TeleOpMode extends BaseLinearOpMode {
 
+    AbstractOngoingAction armResetAction = null;
+
     @Override
     public void teamInit() {
         telemetry.addLine("GP1:")
@@ -71,13 +73,9 @@ abstract class TeleOpMode extends BaseLinearOpMode {
     // Called over and over until stop button is pressed
     public void teleOpLoop() {
         if(gamepad2.x)
-        {
             robot.safetysAreDisabled = true;
-        }
         else
-        {
             robot.safetysAreDisabled = false;
-        }
 
         if(gamepad2.y)
         {
@@ -100,30 +98,87 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             }
         }
 
-        if(gamepad2.right_bumper)
-            robot.setArmExtensionPower(-gamepad2.left_stick_y / 4);
-        else
-            robot.setArmExtensionPower(-gamepad2.left_stick_y);
+        if(gamepad2.left_stick_button || gamepad2.right_stick_button)
+        {
+            armResetAction = robot.startArmReset();
+        }
 
-        robot.setSwingArmPower(-gamepad2.right_stick_y);
+        if ( armResetAction != null && armResetAction.isDone() )
+            armResetAction = null;
 
-        double hookPower;
-        if(gamepad2.left_bumper)
-            hookPower = 0.2;
-        else
-            hookPower = 1;
 
+        // Control Arm if arm-reset is not happening
+        if(armResetAction == null)
+        {
+            if (gamepad2.right_bumper)
+                robot.setArmExtensionPower(-gamepad2.left_stick_y / 4);
+            else
+                robot.setArmExtensionPower(-gamepad2.left_stick_y);
+
+            robot.setSwingArmPower(-gamepad2.right_stick_y);
+        }
+
+
+        double hookPower = 1;
         if(gamepad2.dpad_up)
-        {
             robot.setHookPower(hookPower);
-        }
         else if(gamepad2.dpad_down)
-        {
             robot.setHookPower(-hookPower);
-        }
         else
-        {
             robot.setHookPower(0);
+
+        if(gamepad1.right_bumper)
+        {
+            robot.skoochRight();
+
+            //Wait until button is released before switching front and back
+            while(shouldOpModeKeepRunning() && gamepad1.right_bumper)
+            {
+                sleep(1);
+            }
+        }
+
+        if(gamepad1.left_bumper)
+        {
+            robot.skoochLeft();
+
+            //Wait until button is released before switching front and back
+            while(shouldOpModeKeepRunning() && gamepad1.left_bumper)
+            {
+                sleep(1);
+            }
+        }
+
+        if(gamepad2.right_bumper)
+        {
+            robot.hookUp(hookPower, false);
+
+            //Wait until button is released before switching front and back
+            while(shouldOpModeKeepRunning() && gamepad2.right_bumper)
+            {
+                sleep(1);
+            }
+        }
+
+        if(gamepad1.dpad_left)
+        {
+            robot.turnLeft(20,1);
+
+            //Wait until button is released before switching front and back
+            while(shouldOpModeKeepRunning() && gamepad2.dpad_left)
+            {
+                sleep(1);
+            }
+        }
+        if(gamepad1.dpad_right)
+        {
+            robot.turnRight(20,1);
+
+            //Wait until button is released before switching front and back
+            while(shouldOpModeKeepRunning() && gamepad2.dpad_right)
+            {
+                sleep(1);
+            }
         }
     }
 }

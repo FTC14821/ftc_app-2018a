@@ -37,7 +37,7 @@ public class encoderTest extends TeleOpMode
         }
         else
         {
-            robot.stop();
+            robot.stop(false);
         }
     }
 }
