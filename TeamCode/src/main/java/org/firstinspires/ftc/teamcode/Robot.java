@@ -56,6 +56,8 @@ public class Robot
     int armSwingSpeed, hookSpeed, armExtensionSpeed, m0Speed;
     double previousArmSwingPower, previousHookPower, previousArmExtensionPower, previousM0Power;
 
+    double correctHeading;
+
     public static final double ENCODER_CLICKS_PER_INCH = 79.27;
 
         public Robot(BaseLinearOpMode baseLinearOpMode, HardwareMap hardwareMap, Telemetry telemetry)
@@ -93,6 +95,8 @@ public class Robot
         armExtensionSpeed = 0;
         m0Speed = 0;
 
+        correctHeading = totalDegreesTurned;
+
         setRobotOrientation(true);
         stop(false);
 
@@ -111,6 +115,12 @@ public class Robot
                     @Override
                     public String value() {
                         return String.format("%.1f", totalDegreesTurned);
+                    }
+                })
+                .addData("CorrectHdg", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return String.format("%.1f", correctHeading);
                     }
                 })
                 .addData("Cmd", new Func<String>() {
@@ -304,7 +314,7 @@ public class Robot
         // Zero power is simple
         if(power == 0)
         {
-            setArmSwingPower_raw(0,0);
+            setSwingArmPower_raw(0,0);
             return;
         }
 
@@ -318,7 +328,7 @@ public class Robot
         // When not calibrated:  Power/4
         if(!armSwingCalibrated)
         {
-            setArmSwingPower_raw(power, 1.0/4);
+            setSwingArmPower_raw(power, 1.0/4);
             return;
         }
 
@@ -373,30 +383,30 @@ public class Robot
                 powerMultiple /= 2;
         }
 
-        setArmSwingPower_raw(power, powerMultiple);
+        setSwingArmPower_raw(power, powerMultiple);
     }
 
-        public int getArmSwingZone()
-        {
-            int zone;
-            int armLocation = swingMotor.getCurrentPosition();
-
-            if(armLocation < swing0 + 1000)
-                zone = 1;
-            else if(armLocation >= swing0 + 1000 && armLocation < swing0 + 1150)
-                zone = 2;
-            else
-                zone = 3;
-            return zone;
-        }
-
-
-        private void setArmSwingPower_raw(double power, double powerMultiple)
+    public int getArmSwingZone()
     {
-        double actualPower = power * powerMultiple;
-        if(powersAreDifferent(actualPower, swingMotor.getPower()))
-            RobotLog.ww("team14821", "Setting arm-swing power to %.2f (%.2f x %.2f)", actualPower, power, powerMultiple);
-        swingMotor.setPower(actualPower);
+        int zone;
+        int armLocation = swingMotor.getCurrentPosition();
+
+        if(armLocation < swing0 + 1000)
+            zone = 1;
+        else if(armLocation >= swing0 + 1000 && armLocation < swing0 + 1150)
+            zone = 2;
+        else
+            zone = 3;
+        return zone;
+    }
+
+
+    public void setSwingArmPower_raw(double power, double powerMultiple)
+    {
+    double actualPower = power * powerMultiple;
+    if(powersAreDifferent(actualPower, swingMotor.getPower()))
+        RobotLog.ww("team14821", "Setting arm-swing power to %.2f (%.2f x %.2f)", actualPower, power, powerMultiple);
+    swingMotor.setPower(actualPower);
     }
 
     private void setLeftPower(double leftPower)
@@ -495,25 +505,28 @@ public class Robot
     // Protect robot
     public void healthCheck()
     {
-        if(Math.abs(previousArmSwingPower) >= 0.25 && Math.abs(armSwingSpeed) < 10)
+        if(opMode instanceof TeleOpMode)
         {
-            RobotLog.ww(ROBOT_TAG, "EMERGENCY ARM SWING STOP");
-            setSwingArmPower(0);
-        }
-        if(Math.abs(previousHookPower) >= 0.25 && Math.abs(hookSpeed) < 10)
-        {
-            RobotLog.ww(ROBOT_TAG, "EMERGENCY HOOK STOP");
-            setHookPower(0);
-        }
-        if(Math.abs(previousArmExtensionPower) >= 0.25 && Math.abs(armExtensionSpeed) < 10)
-        {
-            RobotLog.ww(ROBOT_TAG, "EMERGENCY ARM EXTENSION STOP");
-            setArmExtensionPower(0);
-        }
-        if(Math.abs(previousArmSwingPower) >= 0.25 && Math.abs(armSwingSpeed) < 10)
-        {
-            RobotLog.ww(ROBOT_TAG, "EMERGENCY WHEEL STOP");
-            M0.setPower(0);
+            if (Math.abs(previousArmSwingPower) >= 0.15 && Math.abs(armSwingSpeed) < 10)
+            {
+                RobotLog.ww(ROBOT_TAG, "EMERGENCY ARM SWING STOP");
+                setSwingArmPower(0);
+            }
+            if (Math.abs(previousHookPower) >= 0.15 && Math.abs(hookSpeed) < 10)
+            {
+                RobotLog.ww(ROBOT_TAG, "EMERGENCY HOOK STOP");
+                setHookPower(0);
+            }
+            if (Math.abs(previousArmExtensionPower) >= 0.15 && Math.abs(armExtensionSpeed) < 10)
+            {
+                RobotLog.ww(ROBOT_TAG, "EMERGENCY ARM EXTENSION STOP");
+                setArmExtensionPower(0);
+            }
+            if (Math.abs(previousArmSwingPower) >= 0.15 && Math.abs(armSwingSpeed) < 10)
+            {
+                RobotLog.ww(ROBOT_TAG, "EMERGENCY WHEEL STOP");
+                M0.setPower(0);
+            }
         }
 
 
@@ -623,50 +636,76 @@ public class Robot
     {
         opMode.setOperation(String.format("InchMove(%.1f, %.1f", inches, power));
 
+        double startPosition = getWheelPosition();
+
         double encoderClicks = inches * ENCODER_CLICKS_PER_INCH;
         double stopPosition = getWheelPosition() + encoderClicks;
 
-        double startingHeading = getTotalDegreesTurned();
-
         while (shouldRobotKeepRunning() && getWheelPosition() <= stopPosition) {
+
+            // avoid skidding by using less power for first 10 inches
+            double wheelPower;
+            if ( getWheelPosition() - startPosition < 10*ENCODER_CLICKS_PER_INCH )
+                wheelPower = 0.3;
+            else
+                wheelPower = power;
+
             //Heading is larger to the left
             double currentHeading = getTotalDegreesTurned();
-            double headingError = startingHeading - currentHeading;
+            double headingError = correctHeading - currentHeading;
 
             opMode.setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees",
                     (stopPosition - getWheelPosition()) / ENCODER_CLICKS_PER_INCH,
                     headingError));
 
-
-            if (headingError > 0.0) {
-                //The current heading is too big so we turn to the left
-                setPowerSteering(power, -0.05);
-            } else if (headingError < 0.0) {
-                //Current heading is too small, so we steer to the right
-                setPowerSteering(power, 0.05);
-            } else {
-                // Go Straight
-                driveStraight(power);
+            if ( headingError > 10 )
+                // Use 0 degrees so turn will just turn to the correct place
+                turnLeft(0, 1);
+            else if ( headingError < -10 )
+                turnRight(0, 1);
+            else
+            {
+                if (headingError > 0.0)
+                {
+                    //The current heading is too big so we turn to the left
+                    setPowerSteering(wheelPower, -0.1 * headingError);
+                } else if (headingError < 0.0)
+                {
+                    //Current heading is too small, so we steer to the right
+                    setPowerSteering(wheelPower, 0.1 * headingError);
+                } else
+                {
+                    // Go Straight
+                    driveStraight(wheelPower);
+                }
             }
         }
         stop(true);
 
         opMode.setStatus("Done");
-
     }
+
     public void inchmoveBack(double inches, double power)
     {
         opMode.setOperation(String.format("InchmoveBack(%.1f, %.1f", inches, power));
 
+        double startPosition = getWheelPosition();
+
         double encoderClicks = inches * ENCODER_CLICKS_PER_INCH;
         double stopPosition = getWheelPosition() - encoderClicks;
 
-        double startingHeading = getTotalDegreesTurned();
-
         while (shouldRobotKeepRunning() && getWheelPosition() >= stopPosition) {
+
+            // avoid skidding by using less power for first 10 inches
+            double wheelPower;
+            if ( startPosition - getWheelPosition() < 10 * ENCODER_CLICKS_PER_INCH )
+                wheelPower = 0.3;
+            else
+                wheelPower = power;
+
             //Heading is larger to the left
             double currentHeading = getTotalDegreesTurned();
-            double headingError = startingHeading - currentHeading;
+            double headingError = correctHeading - currentHeading;
 
             opMode.setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees",
                     (stopPosition - getWheelPosition()) / ENCODER_CLICKS_PER_INCH,
@@ -675,54 +714,61 @@ public class Robot
 
             if (headingError > 0.0) {
                 //The current heading is too big so we turn to the right
-                setPowerSteering(-power, 0.05);
+                setPowerSteering(-wheelPower, 0.1 * headingError);
             } else if (headingError < 0.0) {
                 //Current heading is too small, so we steer to the left
-                setPowerSteering(-power, -0.05);
+                setPowerSteering(-wheelPower, -0.1 * headingError);
             } else {
                 // Go Straight
-                driveStraight(-power);
+                driveStraight(-wheelPower);
             }
         }
         stop(true);
 
         opMode.setStatus("Done");
-
     }
 
+    public void resetCorrectHeading()
+    {
+        correctHeading = totalDegreesTurned;
+    }
 
     public void turnRight(double degrees, double speed)
     {
+        correctHeading -= degrees;
+
         opMode.setOperation(String.format("TurnRight(d=%.1f, s=%.1f", degrees, speed));
         double turnApproximation = 2;
         double startingHeading = getTotalDegreesTurned();
-        double endHeading = startingHeading - degrees + turnApproximation;
+        double endHeading = correctHeading + turnApproximation;
 
-        double degreesToGo = -degrees;
+        double degreesToGo = endHeading - getTotalDegreesTurned();
 
         while (shouldRobotKeepRunning() && degreesToGo < 0) {
             // Goal - Current
             degreesToGo = endHeading - getTotalDegreesTurned();
 
             opMode.setStatus(String.format("%.1f degrees to go. ", degreesToGo));
-            if (degreesToGo > -20) {
+            if (degreesToGo > -40) {
                 spin(0.2);
             } else {
                 spin(speed);
             }
         }
         opMode.setStatus("Right turn is done");
-        stop(false);
+        stop(true);
     }
 
     public void turnLeft(double degrees, double speed)
     {
+        correctHeading += degrees;
+
         opMode.setOperation(String.format("TurnLeft(d=%.1f, s=%.1f", degrees, speed));
         double turnApproximation = 2;
         double startingHeading = getTotalDegreesTurned();
-        double endHeading = startingHeading + degrees - turnApproximation;
+        double endHeading = correctHeading - turnApproximation;
 
-        double degreesToGo = degrees;
+        double degreesToGo = endHeading - getTotalDegreesTurned();
 
         while (shouldRobotKeepRunning() && degreesToGo > 0)
         {
@@ -730,13 +776,13 @@ public class Robot
             degreesToGo = endHeading - getTotalDegreesTurned();
 
             opMode.setStatus(String.format("%.1f degrees to go. ", degreesToGo));
-            if(degreesToGo < 20)
+            if(degreesToGo < 40)
                 spin(-0.2);
             else
                 spin(-speed);
         }
         opMode.setStatus("Turn left is done");
-        stop(false);
+        stop(true);
     }
 
     //Scooch
@@ -794,7 +840,7 @@ public class Robot
         opMode.setOperation("Calibrating arm swing");
         int change;
         int oldValue = swingMotor.getCurrentPosition();
-        setArmSwingPower_raw(-0.3, 1.0);
+        setSwingArmPower_raw(-0.3, 1.0);
 
         while (shouldRobotKeepRunning()) {
             opMode.sleep(250);
@@ -805,7 +851,7 @@ public class Robot
             opMode.setStatus(String.format("Position=%d, change=%d", newValue, change));
             // If it isn't getting more negative
             if (change > -5) {
-                setArmSwingPower_raw(0, 0);
+                setSwingArmPower_raw(0, 0);
                 break;
             }
         }

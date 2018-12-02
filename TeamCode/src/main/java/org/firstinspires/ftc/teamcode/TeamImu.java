@@ -50,7 +50,7 @@ public class TeamImu  {
         imu.initialize(parameters);
 
         // Set up our telemetry dashboard
-        setupTelemetry(telemetry);
+        //setupTelemetry(telemetry);
 
         return this;
     }
