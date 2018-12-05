@@ -11,6 +11,25 @@ public class Autonomous_Land extends AutonomousOpMode
     {
         super.teamInit();
         robot.calibrateHook();
+        robot.getRobotVision().activate();
+    }
+
+    int getGoldLocation()
+    {
+        long start = System.currentTimeMillis();
+        long endTime = start + 5000;
+        while(shouldOpModeKeepRunning() && robot.getRobotVision().objectColorsFromLeftToRight.size() != 2 && System.currentTimeMillis() < endTime)
+        {
+            teamIdle();
+        }
+        if(robot.getRobotVision().objectColorStringFromLeftToRight .equals("GS"))
+            return 0;
+        if(robot.getRobotVision().objectColorStringFromLeftToRight .equals("SG"))
+            return 1;
+        if(robot.getRobotVision().objectColorStringFromLeftToRight .equals("SS"))
+            return 2;
+        else
+            return 0;
     }
 
     @Override
@@ -18,21 +37,39 @@ public class Autonomous_Land extends AutonomousOpMode
     {
         boolean debug = false;
 
-        robot.hookUp(1, false);
+        robot.getRobotVision().activate();
+
+        //robot.hookUp(1, false);
         robot.turnRight(15, 1);
-        robot.hookDown(1, false);
-        robot.inchmove( 10, 0.75);
+        // Make sure hook is out of the way
+            robot.hookDown(1, false);
+        //    teamSleep(1000);
         robot.turnLeft(15, 1);
-        robot.inchmove(15, 0.75);
-        robot.inchmoveBack(10,0.75);
+        robot.setDrivingPowers(-0.3,-0.3);
+        teamSleep(500);
+        robot.resetCorrectHeading();
+        robot.inchmove(10,1);
+
+        switch(getGoldLocation())
+        {
+            case 2:
+                boopRightMineral();
+                break;
+            case 1:
+                boopMiddleMineral();
+                break;
+            default:
+                boopLeftMineral();
+                break;
+        }
+        robot.getRobotVision().deactivate();
         robot.stop(true);
         if(debug)
         {
             while(shouldOpModeKeepRunning() && !gamepad1.a)
                 teamIdle();
         }
-        robot.turnLeft(75,1);
-        robot.inchmove(55,1);
+        robot.inchmove(45,1);
         robot.stop(true);
         if(debug)
         {
@@ -56,4 +93,28 @@ public class Autonomous_Land extends AutonomousOpMode
 
 
     }
+
+    private void boopLeftMineral()
+    {
+        robot.turnLeft(45,1);
+        robot.inchmove(20,1);
+        robot.inchmoveBack(20,1);
+        robot.turnLeft(45,1);
+    }
+
+    private void boopMiddleMineral()
+    {
+        robot.inchmove(12,1);
+        robot.inchmoveBack(12,1);
+        robot.turnLeft(90,1);
+    }
+
+    private void boopRightMineral()
+    {
+        robot.turnRight(45,1);
+        robot.inchmove(20,1);
+        robot.inchmoveBack(20,1);
+        robot.turnLeft(135,1);
+    }
+
 }

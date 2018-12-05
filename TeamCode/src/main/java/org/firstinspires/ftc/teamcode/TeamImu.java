@@ -28,6 +28,11 @@ public class TeamImu  {
     BNO055IMU.Parameters parameters;
     Acceleration accelrationDrift;
 
+    // Degrees turned to the right are negative
+    double totalDegreesTurned = 0;
+    double lastHeading = 0;
+
+
 
     public TeamImu initialize(HardwareMap hardwareMap, Telemetry telemetry) {
         this.parameters = parameters;
@@ -49,12 +54,29 @@ public class TeamImu  {
 
         imu.initialize(parameters);
 
+        lastHeading = getHeading();
+
         // Set up our telemetry dashboard
         //setupTelemetry(telemetry);
 
         return this;
     }
 
+    public void loop()
+    {
+        // Accumulate degrees turned
+        double currentHeading = getHeading();
+        double degreesTurned = currentHeading - lastHeading;
+        lastHeading = currentHeading;
+
+        // Watch for wrap around
+        if (degreesTurned > 180)
+            degreesTurned -= 360;
+        else if (degreesTurned < -180)
+            degreesTurned += 360;
+
+        totalDegreesTurned += degreesTurned;
+    }
 
     /**
      * Adjust for phantom acceleration
@@ -166,4 +188,8 @@ public class TeamImu  {
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 
+    public double getTotalDegreesTurned()
+    {
+        return totalDegreesTurned;
+    }
 }

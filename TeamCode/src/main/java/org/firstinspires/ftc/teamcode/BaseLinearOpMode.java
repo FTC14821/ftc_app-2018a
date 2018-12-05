@@ -42,13 +42,13 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
         setStep("ContructingRobot");
         robot = new Robot(this, hardwareMap, telemetry);
+        robot.init();
         setStatus("Robot constructed");
     }
 
     // Where OpModes can initialize themselves
     void teamInit()
     {
-
     }
 
     // What happens after Play is pressed

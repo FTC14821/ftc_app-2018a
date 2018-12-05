@@ -12,23 +12,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Robot
-    {
+{
     public static final String ROBOT_TAG = "team14821";
-    HardwareMap hardwareMap;
-    BaseLinearOpMode opMode;
-    DcMotor M0;
-    DcMotor M1;
-    DcMotor armExtensionMotor;
-    DcMotor hookMotor;
-    DcMotor swingMotor;
+    final Telemetry telemetry;
+    final HardwareMap hardwareMap;
+    final BaseLinearOpMode opMode;
+    final DcMotor M0;
+    final DcMotor M1;
+    final DcMotor armExtensionMotor;
+    final DcMotor hookMotor;
+    final DcMotor swingMotor;
 
     boolean safetysAreDisabled = false;
 
     boolean motorsInFront = true;
-
-    // Degrees turned to the right are negative
-    double totalDegreesTurned = 0;
-    double lastHeading = 0;
 
     // Encoder when arm extension is at the top
     boolean armExtensionCalibrated = false;
@@ -58,11 +55,14 @@ public class Robot
 
     double correctHeading;
 
+    private RobotVision robotVision;
+
     public static final double ENCODER_CLICKS_PER_INCH = 79.27;
 
         public Robot(BaseLinearOpMode baseLinearOpMode, HardwareMap hardwareMap, Telemetry telemetry)
     {
         this.hardwareMap = hardwareMap;
+        this.telemetry   = telemetry;
         opMode = baseLinearOpMode;
         M0 = hardwareMap.dcMotor.get("M0");
         M1 = hardwareMap.dcMotor.get("M1");
@@ -77,9 +77,6 @@ public class Robot
 
         teamImu = new TeamImu().initialize(hardwareMap, telemetry);
 
-        totalDegreesTurned = 0;
-        lastHeading = getImuHeading();
-        
         previousArmExtensionPosition = armExtensionMotor.getCurrentPosition();
         previousHookPosition = hookMotor.getCurrentPosition();
         previousArmSwingPosition = swingMotor.getCurrentPosition();
@@ -95,12 +92,16 @@ public class Robot
         armExtensionSpeed = 0;
         m0Speed = 0;
 
-        correctHeading = totalDegreesTurned;
+        correctHeading = teamImu.getTotalDegreesTurned();
 
         setRobotOrientation(true);
-        stop(false);
+        stop(true);
 
         setupRobotTelemetry(telemetry);
+    }
+
+    public void init()
+    {
     }
 
     boolean shouldRobotKeepRunning()
@@ -114,7 +115,7 @@ public class Robot
                 .addData("TotDeg", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f", totalDegreesTurned);
+                        return String.format("%.1f", teamImu.getTotalDegreesTurned());
                     }
                 })
                 .addData("CorrectHdg", new Func<String>() {
@@ -150,26 +151,65 @@ public class Robot
                         return String.format("%+.1f@%d", getRightMotor().getPower(), getRightMotor().getCurrentPosition());
                     }
                 });
-        telemetry.addLine()
-                .addData("Hook", new Func<String>() {
+
+        telemetry.addLine("Hook")
+                .addData("Pow", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%+.1f@%d z=%d, s=%d", hookMotor.getPower(), hookMotor.getCurrentPosition(), hook0, hookSpeed);
+                        return String.format("%+.1f", hookMotor.getPower());
                     }
                 })
-                .addData("Arm Ext", new Func<String>() {
+                .addData("Spd", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%+.1f@%d z=%d, s=%d", armExtensionMotor.getPower(), armExtensionMotor.getCurrentPosition(), extension0, armExtensionSpeed);
+                        return String.format("%+d", hookSpeed);
                     }
                 })
-                .addData("Arm Swing", new Func<String>() {
+                .addData("Loc", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%+.1f@%d z=%d, s=%d", swingMotor.getPower(), swingMotor.getCurrentPosition(), swing0, armSwingSpeed);
+                        return String.format("%d z=%d", hookMotor.getCurrentPosition(), hook0);
+                    }
+                });
+
+        telemetry.addLine("Arm Swing")
+                .addData("Pow", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return String.format("%+.1f", swingMotor.getPower());
                     }
                 })
-        ;
+                .addData("Spd", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return String.format("%+d", armSwingSpeed);
+                    }
+                })
+                .addData("Loc", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return String.format("%d zone=%d zero=%d", swingMotor.getCurrentPosition(), getArmSwingZone(), swing0);
+                    }
+                });
+        telemetry.addLine("Arm Extension")
+                .addData("Pow", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return String.format("%+.1f", armExtensionMotor.getPower());
+                    }
+                })
+                .addData("Spd", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return String.format("%+d", armExtensionSpeed);
+                    }
+                })
+                .addData("Loc", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return String.format("%d z=%d", armExtensionMotor.getCurrentPosition(), extension0);
+                    }
+                });
     }
 
 
@@ -255,7 +295,7 @@ public class Robot
     }
 
     public double getTotalDegreesTurned() {
-        return totalDegreesTurned;
+        return teamImu.getTotalDegreesTurned();
     }
 
     public double getImuHeading() {
@@ -474,18 +514,10 @@ public class Robot
 
         healthCheck();
 
-        // Accumulate degrees turned
-        double currentHeading = getImuHeading();
-        double degreesTurned = currentHeading - lastHeading;
-        lastHeading = currentHeading;
+        teamImu.loop();
+        if ( robotVision != null )
+            robotVision.loop();
 
-        // Watch for wrap around
-        if (degreesTurned > 180)
-            degreesTurned -= 360;
-        else if (degreesTurned < -180)
-            degreesTurned += 360;
-
-        totalDegreesTurned += degreesTurned;
 
         // Loop through a copy of the ongoing actions so we can remove completed actions
         for(AbstractOngoingAction action : new ArrayList<>(ongoingActions))
@@ -507,24 +539,24 @@ public class Robot
     {
         if(opMode instanceof TeleOpMode)
         {
-            if (Math.abs(previousArmSwingPower) >= 0.15 && Math.abs(armSwingSpeed) < 10)
+            if (Math.abs(previousArmSwingPower) >= 0.25 && Math.abs(armSwingSpeed) < 10)
             {
-                RobotLog.ww(ROBOT_TAG, "EMERGENCY ARM SWING STOP");
+                RobotLog.ww(ROBOT_TAG, "EMERGENCY ARM SWING STOP: Power was %.2f, speed was %d", previousArmSwingPower, armSwingSpeed);
                 setSwingArmPower(0);
             }
-            if (Math.abs(previousHookPower) >= 0.15 && Math.abs(hookSpeed) < 10)
+            if (Math.abs(previousHookPower) >= 0.25 && Math.abs(hookSpeed) < 10)
             {
-                RobotLog.ww(ROBOT_TAG, "EMERGENCY HOOK STOP");
+                RobotLog.ww(ROBOT_TAG, "EMERGENCY HOOK STOP: Power was %.2f, speed was %d", previousHookPower, hookSpeed);
                 setHookPower(0);
             }
-            if (Math.abs(previousArmExtensionPower) >= 0.15 && Math.abs(armExtensionSpeed) < 10)
+            if (Math.abs(previousArmExtensionPower) >= 0.25 && Math.abs(armExtensionSpeed) < 10)
             {
-                RobotLog.ww(ROBOT_TAG, "EMERGENCY ARM EXTENSION STOP");
+                RobotLog.ww(ROBOT_TAG, "EMERGENCY ARM EXTENSION STOP: Power was %.2f, speed was %d", previousArmExtensionPower, armExtensionSpeed);
                 setArmExtensionPower(0);
             }
-            if (Math.abs(previousArmSwingPower) >= 0.15 && Math.abs(armSwingSpeed) < 10)
+            if (Math.abs(previousM0Power) >= 0.25 && Math.abs(m0Speed) < 10)
             {
-                RobotLog.ww(ROBOT_TAG, "EMERGENCY WHEEL STOP");
+                RobotLog.ww(ROBOT_TAG, "EMERGENCY WHEEL STOP: Power was %.2f, speed was %d", previousM0Power, m0Speed);
                 M0.setPower(0);
             }
         }
@@ -730,7 +762,7 @@ public class Robot
 
     public void resetCorrectHeading()
     {
-        correctHeading = totalDegreesTurned;
+        correctHeading = getTotalDegreesTurned();
     }
 
     public void turnRight(double degrees, double speed)
@@ -912,5 +944,15 @@ public class Robot
     public AbstractOngoingAction startArmReset()
     {
         return startOngoingAction(new OngoingAction_ArmReset(this));
+    }
+
+    public RobotVision getRobotVision()
+    {
+        if ( robotVision == null )
+        {
+            robotVision = new RobotVision(this);
+            robotVision.init();
+        }
+        return robotVision;
     }
 }
