@@ -30,9 +30,16 @@ public class OngoingAction_ArmReset extends AbstractOngoingAction
     }
 
     @Override
+    public void cleanup()
+    {
+        robot.armExtensionMotor.setPower(0);
+        robot.swingMotor.setPower(0);
+    }
+
+    @Override
     public boolean isDone()
     {
-        if(robot.armExtensionMotor.getPower() == 0 && robot.swingMotor.getPower() == 0)
+        if (robot.armExtensionMotor.getPower() == 0 && robot.swingMotor.getPower() == 0)
             return true;
         else
             return false;

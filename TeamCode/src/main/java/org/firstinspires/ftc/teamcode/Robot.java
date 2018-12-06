@@ -23,7 +23,10 @@ public class Robot
     final DcMotor hookMotor;
     final DcMotor swingMotor;
 
-    boolean safetysAreDisabled = false;
+    boolean allSafetysAreDisabled = false;
+    boolean hookSafetyIsDisabled = false;
+    boolean armSwingSafetyIsDisabled = false;
+    boolean armExtensionSafetyIsDisabled = false;
 
     boolean motorsInFront = true;
 
@@ -215,14 +218,18 @@ public class Robot
 
     public void stop(boolean brake)
     {
+        DcMotor.ZeroPowerBehavior originalBehavior = M0.getZeroPowerBehavior();
+
         if(brake)
         {
             drivingCommand = "stop and brake";
-            setDrivingPowers(-0.1, -0.1);
-            opMode.teamSleep(2);
-            setDrivingPowers(0.1,0.1);
-            opMode.teamSleep(2);
-            setDrivingPowers(0,0);
+            M0.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            M1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            setRightPower(0);
+            setLeftPower(0);
+            opMode.teamSleep(100, "Braking");
+            M0.setZeroPowerBehavior(originalBehavior);
+            M1.setZeroPowerBehavior(originalBehavior);
         }
         else
         {
@@ -318,8 +325,6 @@ public class Robot
 
     public void setHookPower(double power)
     {
-        if(!hookCalibrated && !safetysAreDisabled)
-            return;
         if(powersAreDifferent(hookMotor.getPower(), power) )
         {
             RobotLog.ww("team14821","Setting hook power to %.2f", power);
@@ -580,33 +585,37 @@ public class Robot
 
     private boolean isHookPowerOK(double powerToCheck)
     {
-        boolean result;
+        String problemReason;
 
-        if(safetysAreDisabled)
-            result = true;
-
+        if(allSafetysAreDisabled)
+            problemReason = null;
+        else if (hookSafetyIsDisabled)
+            problemReason = null;
         else if (!hookCalibrated)
-            result = true;
-
+            problemReason = null;
         else if (hookMotor.getCurrentPosition() > hook0 + MAX_HOOK_DISTANCE && powerToCheck > 0) {
-            result = false;
+            problemReason = String.format("Hook power %f > 0 and hook too high (%d > %d)", powerToCheck,
+                    hookMotor.getCurrentPosition(), hook0 + MAX_HOOK_DISTANCE);
         } else if (hookMotor.getCurrentPosition() < hook0 && powerToCheck < 0) {
-            result = false;
+            problemReason = String.format("Hook power %f < 0 and hook too low (%d < %d)", powerToCheck,
+                    hookMotor.getCurrentPosition(), hook0 );
         }
         else
-            result = true;
+            problemReason = null;
 
-        if(!result)
-            RobotLog.ww(ROBOT_TAG, "Hook power %.2f IS NOT OKAY at position %d", powerToCheck, hookMotor.getCurrentPosition());
+        if(problemReason != null)
+            RobotLog.ww(ROBOT_TAG, "Hook power %.2f IS NOT OKAY at position %d: %s", powerToCheck, hookMotor.getCurrentPosition(), problemReason);
 
-        return result;
+        return problemReason==null;
     }
 
     private boolean isSwingArmPowerOK(double powerToCheck)
     {
         boolean result;
 
-        if(safetysAreDisabled)
+        if(allSafetysAreDisabled)
+            result = true;
+        else if ( armSwingSafetyIsDisabled)
             result = true;
 
         else if (swingMotor.getCurrentPosition() > swing0 + MAX_SWING_ARM_DISTANCE && powerToCheck > 0) {
@@ -627,7 +636,9 @@ public class Robot
     {
         boolean result;
 
-        if(safetysAreDisabled)
+        if(allSafetysAreDisabled)
+            result = true;
+        else if ( armExtensionSafetyIsDisabled )
             result = true;
 
         else if (armExtensionMotor.getCurrentPosition() > extension0 + MAX_ARM_EXTENSION_DISTANCE && powerToCheck > 0) {
@@ -717,9 +728,9 @@ public class Robot
         opMode.setStatus("Done");
     }
 
-    public void inchmoveBack(double inches, double power)
+    public void inchmoveBack(double inches, double power, boolean correctSteering)
     {
-        opMode.setOperation(String.format("InchmoveBack(%.1f, %.1f", inches, power));
+        opMode.setOperation(String.format("InchmoveBack(%.1f, %.1f)", inches, power));
 
         double startPosition = getWheelPosition();
 
@@ -735,25 +746,33 @@ public class Robot
             else
                 wheelPower = power;
 
-            //Heading is larger to the left
-            double currentHeading = getTotalDegreesTurned();
-            double headingError = correctHeading - currentHeading;
+            if(correctSteering)
+            {
+                //Heading is larger to the left
+                double currentHeading = getTotalDegreesTurned();
+                double headingError = correctHeading - currentHeading;
 
-            opMode.setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees",
-                    (stopPosition - getWheelPosition()) / ENCODER_CLICKS_PER_INCH,
-                    headingError));
+                opMode.setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees",
+                        (stopPosition - getWheelPosition()) / ENCODER_CLICKS_PER_INCH,
+                        headingError));
 
 
-            if (headingError > 0.0) {
-                //The current heading is too big so we turn to the right
-                setPowerSteering(-wheelPower, 0.1 * headingError);
-            } else if (headingError < 0.0) {
-                //Current heading is too small, so we steer to the left
-                setPowerSteering(-wheelPower, -0.1 * headingError);
-            } else {
-                // Go Straight
-                driveStraight(-wheelPower);
+                if (headingError > 0.0)
+                {
+                    //The current heading is too big so we turn to the right
+                    setPowerSteering(-wheelPower, 0.1 * headingError);
+                } else if (headingError < 0.0)
+                {
+                    //Current heading is too small, so we steer to the left
+                    setPowerSteering(-wheelPower, -0.1 * headingError);
+                } else
+                {
+                    // Go Straight
+                    driveStraight(-wheelPower);
+                }
             }
+            else
+                driveStraight(-wheelPower);
         }
         stop(true);
 
@@ -820,26 +839,28 @@ public class Robot
     //Scooch
     public void skoochRight()
     {
+        resetCorrectHeading();
         inchmove(5,0.5);
         turnRight(20,0.5);
         inchmove(5,0.5);
         turnLeft(20,0.5);
-        inchmoveBack(10,0.5);
+        inchmoveBack(10,0.5, true);
     }
     public void skoochLeft()
     {
+        resetCorrectHeading();
         inchmove(5,0.5);
         turnLeft(20,0.5);
         inchmove(5,0.5);
         turnRight(20,0.5);
-        inchmoveBack(10,0.5);
+        inchmoveBack(10,0.5, true);
     }
 
     // Calibrations
     public void calibrateHook()
     {
         stop(false);
-        safetysAreDisabled = true;
+        hookSafetyIsDisabled = true;
         opMode.setOperation("Calibrating hook");
         int change;
         int oldValue = hookMotor.getCurrentPosition();
@@ -855,6 +876,7 @@ public class Robot
             opMode.setStatus(String.format("Position=%d, change=%d", newValue, change));
             // If it isn't getting more negative
             if (change > -5) {
+                opMode.setStatus(String.format("Hook has stopped moving: change was %d", change));
                 setHookPower(0);
                 break;
             }
@@ -862,13 +884,13 @@ public class Robot
         hook0 = hookMotor.getCurrentPosition() + 500;
         hookCalibrated = true;
         opMode.setStatus("Hook calibration done");
-        safetysAreDisabled = false;
+        hookSafetyIsDisabled = false;
     }
 
     public void calibrateArmSwing()
     {
         stop(false);
-        safetysAreDisabled = true;
+        armExtensionSafetyIsDisabled = true;
         opMode.setOperation("Calibrating arm swing");
         int change;
         int oldValue = swingMotor.getCurrentPosition();
@@ -894,13 +916,13 @@ public class Robot
         swing0 = swingMotor.getCurrentPosition() + 50;
         armSwingCalibrated = true;
         opMode.setStatus("Arm swing calibration done");
-        safetysAreDisabled = false;
+        armExtensionSafetyIsDisabled = false;
     }
 
     public void calibrateArmExtension()
     {
         stop(false);
-        safetysAreDisabled = true;
+        armExtensionSafetyIsDisabled = true;
         opMode.setOperation("Calibrating arm extension");
         int change;
         int oldValue = armExtensionMotor.getCurrentPosition();
@@ -925,7 +947,7 @@ public class Robot
         extension0 = armExtensionMotor.getCurrentPosition() + 500;
         armExtensionCalibrated = true;
         opMode.setStatus("Arm extension calibration done");
-        safetysAreDisabled = false;
+        armExtensionSafetyIsDisabled = false;
     }
 
     public void calibrateEverything()

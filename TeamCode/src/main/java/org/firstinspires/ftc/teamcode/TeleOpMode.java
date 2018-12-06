@@ -73,18 +73,16 @@ abstract class TeleOpMode extends BaseLinearOpMode {
     // Called over and over until stop button is pressed
     public void teleOpLoop() {
         if(gamepad2.x)
-            robot.safetysAreDisabled = true;
+            robot.allSafetysAreDisabled = true;
         else
-            robot.safetysAreDisabled = false;
+            robot.allSafetysAreDisabled = false;
 
         if(gamepad2.y)
         {
             robot.calibrateEverything();
 
             while(shouldOpModeKeepRunning() && gamepad2.y)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
 
         if(gamepad1.back)
@@ -93,9 +91,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning() && gamepad1.back)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
 
         if(gamepad2.left_stick_button || gamepad2.right_stick_button)
@@ -133,9 +129,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning() && gamepad1.right_bumper)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
 
         if(gamepad1.left_bumper)
@@ -144,9 +138,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning() && gamepad1.left_bumper)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
 
         if(gamepad2.right_bumper)
@@ -155,9 +147,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning() && gamepad2.right_bumper)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
 
         if(gamepad1.dpad_left)
@@ -167,9 +157,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning() && gamepad2.dpad_left)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
         if(gamepad1.dpad_right)
         {
@@ -178,32 +166,25 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning() && gamepad2.dpad_right)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
 
         if(gamepad1.dpad_up)
         {
             robot.resetCorrectHeading();
-            robot.turnLeft(180,1);
-
+            robot.inchmove(48, .5);
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning() && gamepad2.dpad_up)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
         if(gamepad1.dpad_down)
         {
             robot.resetCorrectHeading();
-            robot.turnRight(180,1);
+            robot.inchmoveBack(48, 0.5, true);
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning() && gamepad2.dpad_down)
-            {
-                sleep(1);
-            }
+                teamIdle();
         }
     }
 }

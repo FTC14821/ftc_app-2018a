@@ -10,5 +10,6 @@ public abstract class AbstractOngoingAction
     
     abstract public void start();
     abstract public void loop();
+    abstract public void cleanup();
     abstract public boolean isDone();
 }

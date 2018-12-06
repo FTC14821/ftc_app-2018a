@@ -10,8 +10,12 @@ public class Autonomous_Land extends AutonomousOpMode
     void teamInit()
     {
         super.teamInit();
-        robot.calibrateHook();
+
+        setPhase("Activating vision");
         robot.getRobotVision().activate();
+
+        setPhase("Calibrating...");
+        robot.calibrateEverything();
     }
 
     int getGoldLocation()
@@ -36,85 +40,79 @@ public class Autonomous_Land extends AutonomousOpMode
     void teamRun()
     {
         boolean debug = false;
+        double movingSpeed = 0.5;
 
         robot.getRobotVision().activate();
 
-        //robot.hookUp(1, false);
+        robot.hookUp(1, false);
         robot.turnRight(15, 1);
         // Make sure hook is out of the way
             robot.hookDown(1, false);
-        //    teamSleep(1000);
-        robot.turnLeft(15, 1);
-        robot.setDrivingPowers(-0.3,-0.3);
-        teamSleep(500);
+            teamSleep(250, "Hook to lower");
+        robot.turnLeft(10, 1);
+        robot.setDrivingPowers(0,-0.3);
+        teamSleep(500, "Let robot stabilize");
         robot.resetCorrectHeading();
-        robot.inchmove(10,1);
+        robot.inchmove(10,movingSpeed );
 
         switch(getGoldLocation())
         {
             case 2:
-                boopRightMineral();
+                boopRightMineral(movingSpeed);
                 break;
             case 1:
-                boopMiddleMineral();
+                boopMiddleMineral(movingSpeed);
                 break;
             default:
-                boopLeftMineral();
+                boopLeftMineral(movingSpeed);
                 break;
         }
         robot.getRobotVision().deactivate();
+
+        // go to wall
         robot.stop(true);
-        if(debug)
-        {
-            while(shouldOpModeKeepRunning() && !gamepad1.a)
-                teamIdle();
-        }
-        robot.inchmove(45,1);
+        robot.inchmove(48,movingSpeed);
         robot.stop(true);
-        if(debug)
-        {
-            while(shouldOpModeKeepRunning() && !gamepad1.a)
-                teamIdle();
-        }
-        robot.turnRight(120, 1);
-        robot.inchmoveBack(27,1);
+
+        // turn towards crater and go (backwards) to depot
+        robot.turnRight(125, 1);
+        robot.inchmoveBack(28,movingSpeed, false);
         robot.stop(true);
+
+        // At depot. Drop marker
         robot.setSwingArmPower_raw(0.4, 1);
         while(robot.getArmSwingZone() != 3 && shouldOpModeKeepRunning())
             teamIdle();
         robot.setSwingArmPower_raw(0, 1);
         robot.startArmReset();
-        robot.inchmove(42, 1);
-        robot.turnRight(45,1);
-        robot.inchmove(80,1);
-        robot.turnLeft(135,1);
+        robot.inchmove(51, movingSpeed);
         robot.hookDown(1, true);
-        teamSleep(120*1000);
+        teamSleep(120*1000, "Keep telemetry");
 
 
     }
 
-    private void boopLeftMineral()
+    private void boopLeftMineral(double movingSpeed)
     {
-        robot.turnLeft(45,1);
-        robot.inchmove(20,1);
-        robot.inchmoveBack(20,1);
+        robot.turnLeft(45, 1);
+        robot.inchmove(20,movingSpeed);
+        robot.inchmoveBack(14,movingSpeed, false);
         robot.turnLeft(45,1);
     }
 
-    private void boopMiddleMineral()
+    private void boopMiddleMineral(double movingSpeed)
     {
-        robot.inchmove(12,1);
-        robot.inchmoveBack(12,1);
+        robot.inchmove(12,movingSpeed);
+        robot.inchmoveBack(6,movingSpeed, false);
         robot.turnLeft(90,1);
     }
 
-    private void boopRightMineral()
+    private void boopRightMineral(double movingSpeed)
     {
         robot.turnRight(45,1);
-        robot.inchmove(20,1);
-        robot.inchmoveBack(20,1);
-        robot.turnLeft(135,1);
+        robot.inchmove(20,movingSpeed);
+        robot.inchmoveBack(14,movingSpeed, false);
+        robot.turnLeft(140,1);
     }
 
 }

@@ -183,7 +183,7 @@ public class RobotVision  {
 
         if (updatedRecognitions != null)
         {
-            RobotLog.ww(Robot.ROBOT_TAG, "Recognitions: %s", updatedRecognitions);
+            //RobotLog.ww(Robot.ROBOT_TAG, "Recognitions: %s", updatedRecognitions);
             Collections.sort(updatedRecognitions, new Comparator<Recognition>()
             {
                 @Override

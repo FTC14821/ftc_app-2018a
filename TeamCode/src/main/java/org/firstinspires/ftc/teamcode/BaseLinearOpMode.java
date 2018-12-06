@@ -68,25 +68,32 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
 
         setPhase("Running");
         teamRun();
+
+        setPhase("OpMode has finished");
     }
 
 
     public void teamSleep(long sleep_ms)
     {
-        setOperation(String.format("Sleep(%d ms)", sleep_ms));
+        teamSleep(sleep_ms, "");
+    }
+
+    public void teamSleep(long sleep_ms, String reason)
+    {
+        setOperation(String.format("Sleep(%d ms, '%s')", sleep_ms, reason));
 
         long startTime_ms = System.currentTimeMillis();
         long stopTime_ms = startTime_ms + sleep_ms;
 
         while(shouldOpModeKeepRunning() && System.currentTimeMillis() < stopTime_ms)
         {
-            setStatus(String.format("nap time left: %d sec",
+            setStatus(String.format("nap time (for '%s') left: %d sec",
+                    reason,
                     (stopTime_ms - System.currentTimeMillis())/1000));
 
             teamIdle();
-            sleep(1);
         }
-        setStatus("nap is over");
+        setStatus(String.format("nap (for '%s') is over", reason));
     }
 
 
@@ -104,23 +111,27 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
         this.phase = phase;
         RobotLog.ww("team14821", "Staring Phase: %s", phase);
         setStep("");
+        telemetry.update();
     }
 
     public void setStep(String step) {
         this.step = step;
         RobotLog.ww("team14821", "Starting Step: %s", step);
         setOperation("");
+        telemetry.update();
     }
 
     public void setOperation(String operation) {
         this.operation = operation;
         RobotLog.ww("team14821","Starting Operation: %s", operation);
         setStatus("");
+        telemetry.update();
     }
 
     public void setStatus(String status) {
         this.status = status;
         RobotLog.ww("team14821", "Status: %s", status);
+        telemetry.update();
     }
 
     // Team's version of opModeIsActive
@@ -129,6 +140,6 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
     public boolean shouldOpModeKeepRunning()
     {
         teamIdle();
-        return opModeIsActive();
+        return ! isStarted() || opModeIsActive();
     }
 }

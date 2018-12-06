@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp(name = "T: encoderTest", group = "Tinkering")
 
-public class encoderTest extends TeleOpMode
+public class encoderTest extends AutonomousOpMode
 {
 
     int startPosition, stopPosition;
@@ -18,26 +18,18 @@ public class encoderTest extends TeleOpMode
     }
 
     @Override
-    public void teleOpStart() {
-        super.teleOpStart();
+    void teamRun()
+    {
         startPosition = robot.getWheelPosition();
         stopPosition = startPosition + 4000;
-    }
 
-    @Override
-    public void teleOpLoop() {
-        super.teleOpLoop();
+        robot.driveStraight(0.25);
+        while ( shouldOpModeKeepRunning() && robot.getWheelPosition() < stopPosition )
+            teamIdle();
 
-        int currentPosition = robot.getWheelPosition();
+        robot.stop(true);
 
-        // Go forward until robot hits the stop position
-        if ( currentPosition < stopPosition )
-        {
-            robot.driveStraight(0.25);
-        }
-        else
-        {
-            robot.stop(false);
-        }
+        // Keep telemetry going for a while
+        teamSleep(15000, "Show telemetry");
     }
 }
