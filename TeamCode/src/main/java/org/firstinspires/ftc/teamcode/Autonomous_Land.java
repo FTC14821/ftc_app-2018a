@@ -72,12 +72,12 @@ public class Autonomous_Land extends AutonomousOpMode
         // go to wall
         robot.stop(true);
         robot.inchmove(48,movingSpeed);
-        robot.stop(true);
+        //robot.stop(true);
 
         // turn towards crater and go (backwards) to depot
-        robot.turnRight(125, 1);
-        robot.inchmoveBack(28,movingSpeed, false);
-        robot.stop(true);
+        robot.turnRight(155, 1);
+        robot.inchmoveBack(28,movingSpeed, true);
+        //robot.stop(true);
 
         // At depot. Drop marker
         robot.setSwingArmPower_raw(0.4, 1);
@@ -85,8 +85,10 @@ public class Autonomous_Land extends AutonomousOpMode
             teamIdle();
         robot.setSwingArmPower_raw(0, 1);
         robot.startArmReset();
-        robot.inchmove(51, movingSpeed);
+        // go to crater
+        robot.inchmove(61, movingSpeed);
         robot.hookDown(1, true);
+        robot.calibrateEverything();
         teamSleep(120*1000, "Keep telemetry");
 
 
@@ -102,7 +104,7 @@ public class Autonomous_Land extends AutonomousOpMode
 
     private void boopMiddleMineral(double movingSpeed)
     {
-        robot.inchmove(12,movingSpeed);
+        robot.inchmove(15,movingSpeed);
         robot.inchmoveBack(6,movingSpeed, false);
         robot.turnLeft(90,1);
     }

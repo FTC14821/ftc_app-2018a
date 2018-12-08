@@ -757,18 +757,23 @@ public class Robot
                         headingError));
 
 
-                if (headingError > 0.0)
+                if ( headingError > 10 )
+                    // Use 0 degrees so turn will just turn to the correct place
+                    turnRight(0, 1);
+                else if ( headingError < -10 )
+                    turnLeft(0, 1);
+                else
                 {
-                    //The current heading is too big so we turn to the right
-                    setPowerSteering(-wheelPower, 0.1 * headingError);
-                } else if (headingError < 0.0)
-                {
-                    //Current heading is too small, so we steer to the left
-                    setPowerSteering(-wheelPower, -0.1 * headingError);
-                } else
-                {
-                    // Go Straight
-                    driveStraight(-wheelPower);
+                    if (headingError > 0.0) {
+                        //The current heading is too big so we turn to the right
+                        setPowerSteering(-wheelPower, 0.1 * headingError);
+                    } else if (headingError < 0.0) {
+                        //Current heading is too small, so we steer to the left
+                        setPowerSteering(-wheelPower, -0.1 * headingError);
+                    } else {
+                        // Go Straight
+                        driveStraight(-wheelPower);
+                    }
                 }
             }
             else
@@ -801,7 +806,7 @@ public class Robot
 
             opMode.setStatus(String.format("%.1f degrees to go. ", degreesToGo));
             if (degreesToGo > -40) {
-                spin(0.2);
+                spin(0.35);
             } else {
                 spin(speed);
             }
@@ -828,7 +833,7 @@ public class Robot
 
             opMode.setStatus(String.format("%.1f degrees to go. ", degreesToGo));
             if(degreesToGo < 40)
-                spin(-0.2);
+                spin(-0.35);
             else
                 spin(-speed);
         }
@@ -952,6 +957,8 @@ public class Robot
 
     public void calibrateEverything()
     {
+        //startOngoingAction(new OngoingAction_CalibrateHook(this));
+        //startOngoingAction(new OngoingAction_CalibrateArmExtensionAndSwing(this));
         calibrateHook();
         calibrateArmExtension();
         calibrateArmSwing();
