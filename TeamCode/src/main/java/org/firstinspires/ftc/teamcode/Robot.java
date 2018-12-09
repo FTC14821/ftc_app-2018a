@@ -40,9 +40,9 @@ public class Robot
     boolean hookCalibrated = false;
     int hook0;
     // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
-    public final double MAX_HOOK_DISTANCE = 27500;
-    public final double MAX_SWING_ARM_DISTANCE = 2200;
-    public final double MAX_ARM_EXTENSION_DISTANCE = 12800;
+    public final int MAX_HOOK_DISTANCE = 27500;
+    public final int MAX_SWING_ARM_DISTANCE = 2200;
+    public final int MAX_ARM_EXTENSION_DISTANCE = 12800;
 
     List<AbstractOngoingAction> ongoingActions = new ArrayList<>();
 

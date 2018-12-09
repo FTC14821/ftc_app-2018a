@@ -156,7 +156,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             robot.turnLeft(90,1);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad2.dpad_left)
+            while(shouldOpModeKeepRunning() && gamepad1.dpad_left)
                 teamIdle();
         }
         if(gamepad1.dpad_right)
@@ -165,16 +165,17 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             robot.turnRight(90,1);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad2.dpad_right)
+            while(shouldOpModeKeepRunning() && gamepad1.dpad_right)
                 teamIdle();
         }
 
+        /*
         if(gamepad1.dpad_up)
         {
             robot.resetCorrectHeading();
             robot.inchmove(48, .5);
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad2.dpad_up)
+            while(shouldOpModeKeepRunning() && gamepad1.dpad_up)
                 teamIdle();
         }
         if(gamepad1.dpad_down)
@@ -183,8 +184,9 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             robot.inchmoveBack(48, 0.5, true);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad2.dpad_down)
+            while(shouldOpModeKeepRunning() && gamepad1.dpad_down)
                 teamIdle();
         }
+        */
     }
 }

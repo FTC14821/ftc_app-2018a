@@ -49,7 +49,9 @@ public class Autonomous_Land extends AutonomousOpMode
         // Make sure hook is out of the way
             robot.hookDown(1, false);
             teamSleep(250, "Hook to lower");
-        robot.turnLeft(10, 1);
+        robot.turnLeft(15, 1);
+        robot.hookDown(1,true);
+        /*
         robot.setDrivingPowers(0,-0.3);
         teamSleep(500, "Let robot stabilize");
         robot.resetCorrectHeading();
@@ -90,6 +92,7 @@ public class Autonomous_Land extends AutonomousOpMode
         robot.hookDown(1, true);
         robot.calibrateEverything();
         teamSleep(120*1000, "Keep telemetry");
+        */
 
 
     }
