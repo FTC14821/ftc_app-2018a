@@ -2,16 +2,16 @@ package org.firstinspires.ftc.teamcode;
 
 public class OngoingAction_CalibrateHook extends AbstractOngoingAction
 {
-    public OngoingAction_CalibrateHook(Robot robot)
+    public OngoingAction_CalibrateHook(ActionTracker parentActionTracker, Robot robot)
     {
-        super(robot);
+        super(parentActionTracker, robot, "CalibrateHook", null);
     }
 
     @Override
     public void start()
     {
         robot.hookSafetyIsDisabled = true;
-        robot.setHookPower(-0.15);
+        robot.setHookPower(actionTracker, -0.15);
     }
 
     @Override
@@ -23,8 +23,10 @@ public class OngoingAction_CalibrateHook extends AbstractOngoingAction
     @Override
     public void cleanup()
     {
-        robot.hookMotor.setPower(0);
+        robot.setHookPower(actionTracker, 0);
         robot.hookSafetyIsDisabled = false;
+
+        super.cleanup();
     }
 
     @Override

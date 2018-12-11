@@ -2,9 +2,9 @@ package org.firstinspires.ftc.teamcode;
 
 public class OngoingAction_CalibrateArmExtensionAndSwing extends AbstractOngoingAction
 {
-    public OngoingAction_CalibrateArmExtensionAndSwing(Robot robot)
+    public OngoingAction_CalibrateArmExtensionAndSwing(ActionTracker callingActionTracker, Robot robot)
     {
-        super(robot);
+        super(callingActionTracker, robot, "CalibrateArmExtenstionAndSwing" ,null);
     }
 
     @Override
@@ -23,8 +23,10 @@ public class OngoingAction_CalibrateArmExtensionAndSwing extends AbstractOngoing
     @Override
     public void cleanup()
     {
-        robot.armExtensionMotor.setPower(0);
+        robot.setArmExtensionPower(actionTracker, 0);
         robot.armExtensionSafetyIsDisabled = false;
+
+        super.cleanup();
     }
 
     @Override
@@ -33,7 +35,7 @@ public class OngoingAction_CalibrateArmExtensionAndSwing extends AbstractOngoing
         if(robot.armExtensionSpeed < 10)
         {
             // Once arm extension is retracted, calibrate the arm swing
-            robot.startOngoingAction(new OngoingAction_CalibrateArmSwing(robot));
+            robot.startOngoingAction(new OngoingAction_CalibrateArmSwing(actionTracker, robot));
             return true;
         }
         else

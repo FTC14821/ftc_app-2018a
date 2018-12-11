@@ -10,25 +10,25 @@ public class Autonomous_One_Mineral extends AutonomousOpMode
         void teamInit()
         {
                 super.teamInit();
-                robot.calibrateHook();
+                robot.calibrateHook(opmodeAction);
         }
 
         @Override
         void teamRun()
         {
-                robot.hookUp(1, false);
-                robot.turnRight(15, 1);
-                robot.hookDown(1, false);
-                robot.inchmove( 5, 0.4);
-                robot.stop(false);
-                robot.turnLeft(60, 1);
-                robot.inchmove(30, 1);
-                robot.turnLeft(90, 1);
-                robot.inchmove(30, 1);
-                robot.turnLeft(180, 1);
+                robot.hookUp(opmodeAction, 1, false);
+                robot.turnRight(opmodeAction, 15, 1);
+                robot.hookDown(opmodeAction, 1, false);
+                robot.inchmove( opmodeAction, 5, 0.4);
+                robot.stop(opmodeAction, false);
+                robot.turnLeft(opmodeAction, 60, 1);
+                robot.inchmove(opmodeAction, 30, 1);
+                robot.turnLeft(opmodeAction, 90, 1);
+                robot.inchmove(opmodeAction, 30, 1);
+                robot.turnLeft(opmodeAction, 180, 1);
                 //FLING THE MARKER
-                robot.inchmove(75,1);
+                robot.inchmove(opmodeAction, 75,1);
                 //FLING THE MARKER ARM INTO THE CRATER AFTER EXTENDOING THE ARM
-                robot.hookDown(1, true);
+                robot.hookDown(opmodeAction, 1, true);
         }
 }

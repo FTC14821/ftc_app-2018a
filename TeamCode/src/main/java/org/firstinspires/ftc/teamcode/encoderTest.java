@@ -14,7 +14,7 @@ public class encoderTest extends AutonomousOpMode
     public void teamInit() {
         super.init();
 
-        robot.setDrivingZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        robot.setDrivingZeroPowerBehavior(opmodeAction, DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
     @Override
@@ -23,13 +23,13 @@ public class encoderTest extends AutonomousOpMode
         startPosition = robot.getWheelPosition();
         stopPosition = startPosition + 4000;
 
-        robot.driveStraight(0.25);
-        while ( shouldOpModeKeepRunning() && robot.getWheelPosition() < stopPosition )
-            teamIdle();
+        robot.driveStraight(opmodeAction, 0.25);
+        while ( shouldOpModeKeepRunning(opmodeAction) && robot.getWheelPosition() < stopPosition )
+        {}
 
-        robot.stop(true);
+        robot.stop(opmodeAction, true);
 
         // Keep telemetry going for a while
-        teamSleep(15000, "Show telemetry");
+        teamSleep(opmodeAction, 15000, "Show telemetry");
     }
 }

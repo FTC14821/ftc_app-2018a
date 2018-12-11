@@ -2,16 +2,16 @@ package org.firstinspires.ftc.teamcode;
 
 public class OngoingAction_CalibrateArmSwing extends AbstractOngoingAction
 {
-    public OngoingAction_CalibrateArmSwing(Robot robot)
+    public OngoingAction_CalibrateArmSwing(ActionTracker callingActionTracker, Robot robot)
     {
-        super(robot);
+        super(callingActionTracker, robot, "CalibrateArmSwing" , null);
     }
 
     @Override
     public void start()
     {
         robot.armSwingSafetyIsDisabled = true;
-        robot.setSwingArmPower_raw(-0.3, 1);
+        robot.setSwingArmPower_raw(null, -0.3, 1, "DirectArmSwingControl-Calibration");
     }
 
     @Override
@@ -23,8 +23,10 @@ public class OngoingAction_CalibrateArmSwing extends AbstractOngoingAction
     @Override
     public void cleanup()
     {
-        robot.swingMotor.setPower(0);
+        robot.setSwingArmPower(actionTracker, 0);
         robot.armSwingSafetyIsDisabled = false;
+
+        super.cleanup();
     }
 
     @Override

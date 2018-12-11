@@ -11,26 +11,31 @@ public class Autonomous_Land extends AutonomousOpMode
     {
         super.teamInit();
 
-        setPhase("Activating vision");
-        robot.getRobotVision().activate();
+        robot.getRobotVision(opmodeAction).activate(opmodeAction);
 
-        setPhase("Calibrating...");
-        robot.calibrateEverything();
+        robot.calibrateEverything(opmodeAction);
     }
 
     int getGoldLocation()
     {
+        ActionTracker action = opmodeAction.startChildAction("GetGoldLocation", null);
+
         long start = System.currentTimeMillis();
         long endTime = start + 5000;
-        while(shouldOpModeKeepRunning() && robot.getRobotVision().objectColorsFromLeftToRight.size() != 2 && System.currentTimeMillis() < endTime)
+        RobotVision robotVision = robot.getRobotVision(action);
+
+        while(shouldOpModeKeepRunning(action) && robotVision.objectColorsFromLeftToRight.size() != 2 && System.currentTimeMillis() < endTime)
         {
-            teamIdle();
+            action.setStatus("Seeing %d objects instead of 2: %s",
+                    robotVision.objectColorsFromLeftToRight.size(), robotVision.objectColorStringFromLeftToRight );
         }
-        if(robot.getRobotVision().objectColorStringFromLeftToRight .equals("GS"))
+        action.finish("Final objects: %s", robotVision.objectColorStringFromLeftToRight);
+
+        if(robotVision.objectColorStringFromLeftToRight .equals("GS"))
             return 0;
-        if(robot.getRobotVision().objectColorStringFromLeftToRight .equals("SG"))
+        if(robotVision.objectColorStringFromLeftToRight .equals("SG"))
             return 1;
-        if(robot.getRobotVision().objectColorStringFromLeftToRight .equals("SS"))
+        if(robotVision.objectColorStringFromLeftToRight .equals("SS"))
             return 2;
         else
             return 0;
@@ -42,20 +47,25 @@ public class Autonomous_Land extends AutonomousOpMode
         boolean debug = false;
         double movingSpeed = 0.5;
 
-        robot.getRobotVision().activate();
+        ///////////
+        // Ken : Shouldn't this go down below to right before the switch?
+        //robot.getRobotVision(opmodeAction).activate(opmodeAction);
+        ///////////
 
-        robot.hookUp(1, false);
-        robot.turnRight(15, 1);
+        robot.resetCorrectHeading(opmodeAction, "Perpendicular to lander");
+        robot.hookUp( opmodeAction, 1, false);
+        robot.turnRight(opmodeAction,15, 1);
         // Make sure hook is out of the way
-            robot.hookDown(1, false);
-            teamSleep(250, "Hook to lower");
-        robot.turnLeft(15, 1);
-        robot.hookDown(1,true);
-        /*
-        robot.setDrivingPowers(0,-0.3);
-        teamSleep(500, "Let robot stabilize");
-        robot.resetCorrectHeading();
-        robot.inchmove(10,movingSpeed );
+            robot.hookDown(opmodeAction,1, false);
+            teamSleep(opmodeAction,250, "Hook to lower");
+        robot.turnLeft(opmodeAction,15, 1);
+
+        robot.inchmove(opmodeAction,10,movingSpeed );
+
+        ////////////
+        // Right here? so the vision doesn't activate until we've straightened out?
+        robot.getRobotVision(opmodeAction).activate(opmodeAction);
+        ////////////
 
         switch(getGoldLocation())
         {
@@ -69,55 +79,57 @@ public class Autonomous_Land extends AutonomousOpMode
                 boopLeftMineral(movingSpeed);
                 break;
         }
-        robot.getRobotVision().deactivate();
+        opmodeAction.setStatus("Done from boopping mineral");
+        robot.getRobotVision(opmodeAction).deactivate(opmodeAction);
 
         // go to wall
-        robot.stop(true);
-        robot.inchmove(48,movingSpeed);
+        robot.stop(opmodeAction,true);
+        robot.inchmove(opmodeAction,48,movingSpeed);
+        opmodeAction.setStatus("At wall");
         //robot.stop(true);
 
         // turn towards crater and go (backwards) to depot
-        robot.turnRight(155, 1);
-        robot.inchmoveBack(28,movingSpeed, true);
+        robot.turnRight(opmodeAction,155, 1);
+        robot.inchmoveBack(opmodeAction,28,movingSpeed, true);
+        opmodeAction.setStatus("At Depot");
         //robot.stop(true);
 
         // At depot. Drop marker
-        robot.setSwingArmPower_raw(0.4, 1);
-        while(robot.getArmSwingZone() != 3 && shouldOpModeKeepRunning())
-            teamIdle();
-        robot.setSwingArmPower_raw(0, 1);
-        robot.startArmReset();
+        robot.setSwingArmPower(opmodeAction,1);
+        while(robot.getArmSwingZone() != 3 && shouldOpModeKeepRunning(opmodeAction)) {
+            opmodeAction.setStatus("Arm not yet in swingZone 3");
+        }
+        robot.setSwingArmPower(opmodeAction, 0);
+        robot.startArmReset(opmodeAction);
+        opmodeAction.setStatus("Dropped marker, heading to crater");
+
         // go to crater
-        robot.inchmove(61, movingSpeed);
-        robot.hookDown(1, true);
-        robot.calibrateEverything();
-        teamSleep(120*1000, "Keep telemetry");
-        */
-
-
+        robot.inchmove(opmodeAction,61, movingSpeed);
+        robot.hookDown(opmodeAction, 1, true);
+        robot.calibrateEverything(opmodeAction);
     }
 
     private void boopLeftMineral(double movingSpeed)
     {
-        robot.turnLeft(45, 1);
-        robot.inchmove(20,movingSpeed);
-        robot.inchmoveBack(14,movingSpeed, false);
-        robot.turnLeft(45,1);
+        robot.turnLeft(opmodeAction, 45, 1);
+        robot.inchmove(opmodeAction, 20,movingSpeed);
+        robot.inchmoveBack(opmodeAction, 14,movingSpeed, false);
+        robot.turnLeft(opmodeAction, 45,1);
     }
 
     private void boopMiddleMineral(double movingSpeed)
     {
-        robot.inchmove(15,movingSpeed);
-        robot.inchmoveBack(6,movingSpeed, false);
-        robot.turnLeft(90,1);
+        robot.inchmove(opmodeAction, 15,movingSpeed);
+        robot.inchmoveBack(opmodeAction, 6,movingSpeed, false);
+        robot.turnLeft(opmodeAction, 90,1);
     }
 
     private void boopRightMineral(double movingSpeed)
     {
-        robot.turnRight(45,1);
-        robot.inchmove(20,movingSpeed);
-        robot.inchmoveBack(14,movingSpeed, false);
-        robot.turnLeft(140,1);
+        robot.turnRight(opmodeAction, 45,1);
+        robot.inchmove(opmodeAction, 20,movingSpeed);
+        robot.inchmoveBack(opmodeAction, 14,movingSpeed, false);
+        robot.turnLeft(opmodeAction, 140,1);
     }
 
 }

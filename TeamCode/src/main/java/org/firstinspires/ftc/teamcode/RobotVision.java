@@ -88,12 +88,12 @@ public class RobotVision  {
 
     Robot robot;
 
-    public RobotVision(Robot robot)
+    public RobotVision(ActionTracker action, Robot robot)
     {
         this.robot = robot;
     }
 
-    public void init() {
+    public void init(ActionTracker action) {
         initTelemtry();
 
         if (!ClassFactory.getInstance().canCreateTFObjectDetector())
@@ -151,7 +151,7 @@ public class RobotVision  {
     }
 
 
-    public void activate()
+    public void activate(ActionTracker opmodeAction)
     {
         if (!isReady())
         {
@@ -164,15 +164,17 @@ public class RobotVision  {
         tfodIsActive = true;
     }
 
-    public void deactivate()
+    public void deactivate(ActionTracker callingAction)
     {
+        ActionTracker action = callingAction.startChildAction("DecativatingVision", null);
         if (tfodIsActive)
             tfod.deactivate();
 
         tfodIsActive = false;
+        action.finish();
     }
 
-    public void loop()
+    public void loop(ActionTracker action)
     {
         if (!tfodIsActive)
             return;

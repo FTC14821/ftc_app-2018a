@@ -2,15 +2,15 @@ package org.firstinspires.ftc.teamcode;
 
 public class OngoingAction_ArmReset extends AbstractOngoingAction
 {
-    public OngoingAction_ArmReset(Robot robot)
+    public OngoingAction_ArmReset(ActionTracker callingActionTracker, Robot robot)
     {
-        super(robot);
+        super(callingActionTracker, robot, "ArmReset" ,null );
     }
 
     @Override
     public void start()
     {
-        robot.setArmExtensionPower(-1);
+        robot.setArmExtensionPower(actionTracker, -1);
     }
 
     @Override
@@ -18,14 +18,14 @@ public class OngoingAction_ArmReset extends AbstractOngoingAction
     {
         if ( robot.getArmSwingZone() == 3 )
         {
-            robot.setSwingArmPower(-1);
+            robot.setSwingArmPower(actionTracker,-1);
         }
         else
         {
             if ( robot.armExtensionMotor.getPower() == 0 )
-                robot.setSwingArmPower(-0.3);
+                robot.setSwingArmPower(actionTracker, -0.3);
             else
-                robot.setSwingArmPower(0);
+                robot.setSwingArmPower(actionTracker, 0);
         }
     }
 
@@ -34,6 +34,7 @@ public class OngoingAction_ArmReset extends AbstractOngoingAction
     {
         robot.armExtensionMotor.setPower(0);
         robot.swingMotor.setPower(0);
+        super.cleanup();
     }
 
     @Override

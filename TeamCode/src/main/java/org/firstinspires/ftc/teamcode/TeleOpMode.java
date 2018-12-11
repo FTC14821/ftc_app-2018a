@@ -4,10 +4,14 @@ import org.firstinspires.ftc.robotcore.external.Func;
 
 abstract class TeleOpMode extends BaseLinearOpMode {
 
+    ActionTracker gamepad1Action, gamepad2Action;
     AbstractOngoingAction armResetAction = null;
 
     @Override
     public void teamInit() {
+        gamepad1Action = opmodeAction.startChildAction("GamePad1", null);
+        gamepad2Action = opmodeAction.startChildAction("GamePad2", null);
+
         telemetry.addLine("GP1:")
                 .addData("B", new Func<String>() {
                     @Override public String value() {
@@ -61,9 +65,11 @@ abstract class TeleOpMode extends BaseLinearOpMode {
     @Override
     void teamRun()
     {
+        opmodeAction.setStatus("teleOpStart()");
         teleOpStart();
 
-        while (shouldOpModeKeepRunning())
+        opmodeAction.setStatus("Running and looping");
+        while (shouldOpModeKeepRunning(opmodeAction))
         {
             teleOpLoop();
         }
@@ -72,6 +78,12 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
     // Called over and over until stop button is pressed
     public void teleOpLoop() {
+        if (gamepad1.a)
+            gamepad2Action.startImmediateChildAction("GAMEPAD1 ALERT", null);
+
+        if (gamepad2.a)
+            gamepad2Action.startImmediateChildAction("GAMEPAD2 ALERT", null);
+
         if(gamepad2.x)
             robot.allSafetysAreDisabled = true;
         else
@@ -79,24 +91,24 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
         if(gamepad2.y)
         {
-            robot.calibrateEverything();
+            robot.calibrateEverything(gamepad2Action);
 
-            while(shouldOpModeKeepRunning() && gamepad2.y)
-                teamIdle();
+            while(shouldOpModeKeepRunning(gamepad2Action) && gamepad2.y)
+            {}
         }
 
         if(gamepad1.back)
         {
-            robot.reverseRobotOrientation();
+            robot.reverseRobotOrientation(gamepad1Action);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad1.back)
-                teamIdle();
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.back)
+            {}
         }
 
         if(gamepad2.left_stick_button || gamepad2.right_stick_button)
         {
-            armResetAction = robot.startArmReset();
+            armResetAction = robot.startArmReset(gamepad2Action);
         }
 
         if ( armResetAction != null && armResetAction.isDone() )
@@ -107,66 +119,66 @@ abstract class TeleOpMode extends BaseLinearOpMode {
         if(armResetAction == null)
         {
             if (gamepad2.right_bumper)
-                robot.setArmExtensionPower(-gamepad2.left_stick_y / 4);
+                robot.setArmExtensionPower(gamepad2Action, -gamepad2.left_stick_y / 4);
             else
-                robot.setArmExtensionPower(-gamepad2.left_stick_y);
+                robot.setArmExtensionPower(gamepad2Action, -gamepad2.left_stick_y);
 
-            robot.setSwingArmPower(-gamepad2.right_stick_y);
+            robot.setSwingArmPower(gamepad2Action, -gamepad2.right_stick_y);
         }
 
 
         double hookPower = 1;
         if(gamepad2.dpad_up)
-            robot.setHookPower(hookPower);
+            robot.setHookPower(gamepad2Action, hookPower);
         else if(gamepad2.dpad_down)
-            robot.setHookPower(-hookPower);
+            robot.setHookPower(gamepad2Action, -hookPower);
         else
-            robot.setHookPower(0);
+            robot.setHookPower(gamepad2Action,0);
 
         if(gamepad1.right_bumper)
         {
-            robot.skoochRight();
+            robot.skoochRight(gamepad1Action);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad1.right_bumper)
-                teamIdle();
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.right_bumper)
+            {}
         }
 
         if(gamepad1.left_bumper)
         {
-            robot.skoochLeft();
+            robot.skoochLeft(gamepad1Action);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad1.left_bumper)
-                teamIdle();
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.left_bumper)
+            {}
         }
 
         if(gamepad2.right_bumper)
         {
-            robot.hookUp(hookPower, false);
+            robot.hookUp(gamepad2Action, hookPower, false);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad2.right_bumper)
-                teamIdle();
+            while(shouldOpModeKeepRunning(gamepad2Action) && gamepad2.right_bumper)
+            {}
         }
 
         if(gamepad1.dpad_left)
         {
-            robot.resetCorrectHeading();
-            robot.turnLeft(90,1);
+            robot.resetCorrectHeading(gamepad1Action, "DPad: Turning left from current position");
+            robot.turnLeft(gamepad1Action,90,1);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad1.dpad_left)
-                teamIdle();
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_left)
+            {}
         }
         if(gamepad1.dpad_right)
         {
-            robot.resetCorrectHeading();
-            robot.turnRight(90,1);
+            robot.resetCorrectHeading(gamepad1Action, "DPad: Turning right from current position");
+            robot.turnRight(gamepad1Action, 90,1);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad1.dpad_right)
-                teamIdle();
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_right)
+            {}
         }
 
         /*

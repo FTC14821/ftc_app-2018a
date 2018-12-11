@@ -25,22 +25,22 @@ public class JoyStickControl extends TeleOpMode
         //Joystick Control
         if ( power == 0 && steering == 0 )
         {
-            robot.stop(false);
+            robot.stop(gamepad1Action, false);
         }
         else if(abs(power) < 0.1)
         {
             // Low power: Spin (opposite power to wheels)
 
             // left_stick_x: negative to left which matches robot.spin
-            robot.spin(steering);
+            robot.spin(gamepad1Action, steering);
         }
         else if (steering == 0 )
         {
-            robot.driveStraight(power);
+            robot.driveStraight(gamepad1Action, power);
         }
         else
         {
-            robot.setPowerSteering(power, steering);
+            robot.setPowerSteering(gamepad1Action, power, steering);
         }
     }
 }

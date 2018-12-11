@@ -27,8 +27,8 @@ public class MotorControllerTest extends TeleOpMode
             robot.getRightMotor().setPower(0.5);
 
             //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning() && gamepad1.dpad_up)
-                teamIdle();
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_up)
+            {}
         }
     }
 }

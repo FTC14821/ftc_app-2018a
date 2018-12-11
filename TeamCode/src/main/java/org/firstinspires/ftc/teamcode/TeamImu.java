@@ -34,7 +34,7 @@ public class TeamImu  {
 
 
 
-    public TeamImu initialize(HardwareMap hardwareMap, Telemetry telemetry) {
+    public TeamImu initialize(ActionTracker action, HardwareMap hardwareMap, Telemetry telemetry) {
         this.parameters = parameters;
         // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
         // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
@@ -62,7 +62,7 @@ public class TeamImu  {
         return this;
     }
 
-    public void loop()
+    public void loop(ActionTracker action)
     {
         // Accumulate degrees turned
         double currentHeading = getHeading();
@@ -187,6 +187,11 @@ public class TeamImu  {
     String formatDegrees(double degrees) {
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
+
+    /**
+     *
+     * @return How many degrees the robot has turned. Negative: To the right, Positive: to the Left
+     */
 
     public double getTotalDegreesTurned()
     {
