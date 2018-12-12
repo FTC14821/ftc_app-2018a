@@ -14,6 +14,18 @@ import java.util.List;
 public class Robot
 {
     public static final String ROBOT_TAG = "team14821";
+
+    // Found via experiment
+    public static final double ENCODER_CLICKS_PER_INCH = 79.27;
+    private static final double ENCODER_CLICKS_PER_ROTATION = 4350;
+    // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
+    public final int MAX_HOOK_DISTANCE = 27500;
+    public final int MAX_SWING_ARM_DISTANCE = 2200;
+    public final int MAX_ARM_EXTENSION_DISTANCE = 12800;
+
+    // Does not skid
+    public static final double TURN_POWER = 0.5;
+
     final Telemetry telemetry;
     final HardwareMap hardwareMap;
     final BaseLinearOpMode opMode;
@@ -39,10 +51,6 @@ public class Robot
     // Encoder when hook is at bottom
     boolean hookCalibrated = false;
     int hook0;
-    // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
-    public final int MAX_HOOK_DISTANCE = 27500;
-    public final int MAX_SWING_ARM_DISTANCE = 2200;
-    public final int MAX_ARM_EXTENSION_DISTANCE = 12800;
 
     List<AbstractOngoingAction> ongoingActions = new ArrayList<>();
 
@@ -57,8 +65,6 @@ public class Robot
 
     private RobotVision robotVision;
 
-    public static final double ENCODER_CLICKS_PER_INCH = 79.27;
-
     // When to start stopping turns
     public static final double TURN_APPROXIMATION = 3;
 
@@ -71,8 +77,14 @@ public class Robot
         this.hardwareMap = hardwareMap;
         this.telemetry   = telemetry;
         opMode = baseLinearOpMode;
+
         M0 = hardwareMap.dcMotor.get("M0");
+        M0.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        M0.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
         M1 = hardwareMap.dcMotor.get("M1");
+        M1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        M1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         hookMotor = hardwareMap.dcMotor.get("HookMotor");
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
@@ -128,104 +140,70 @@ public class Robot
                 .addData("Orientation", new Func<String>() {
                     @Override
                     public String value() {
-                        return motorsInFront ? "MotorsFront" : "MotorsBack";
+                        return opMode.saveTelemetryData("Orientation", motorsInFront ? "MotorsFront" : "MotorsBack");
                     }
                 })
         ;
 
         telemetry.addLine("Heading: ")
-                .addData("TotDeg", new Func<String>() {
+                .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%.1f", teamImu.getTotalDegreesTurned());
-                    }
-                })
-                .addData("CorrectHdg", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%.1f", correctHeading);
-                    }
-                })
-                .addData("Error", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%.1f", correctHeading - teamImu.getTotalDegreesTurned());
-                    }
-                })
-                ;
+                        return opMode.saveTelemetryData("Heading","|TotDeg=%.1f|Correct=%.1f|Error=%.1f", 
+                                teamImu.getTotalDegreesTurned(),
+                                correctHeading,
+                                getHeadingError());
+                    }});
 
-        telemetry.addLine("Driving: ")
-                .addData(String.format("L/%s", getLeftMotor()==M0 ? "M0" : "M1"), new Func<String>() {
+        telemetry.addLine("Left: ")
+                .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%+.1f@%d", getLeftMotor().getPower(), getLeftMotor().getCurrentPosition());
-                    }
-                })
-                .addData(String.format("R/%s", getRightMotor()==M0 ? "M0" : "M1"), new Func<String>() {
+                        return opMode.saveTelemetryData("Left", "|p=%+.1f|s=+%d|Loc=%+d|Tgt=%+d|%s",
+                                getLeftMotor().getPower(),
+                                getLeftMotor() == M0 ? m0Speed : m1Speed,
+                                getLeftMotor().getCurrentPosition(),
+                                getRightMotor().getTargetPosition(),
+                                getLeftMotor() == M0 ? "M0" : "M1");
+                    }});
+        telemetry.addLine("Right: ")
+                    .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%+.1f@%d", getRightMotor().getPower(), getRightMotor().getCurrentPosition());
-                    }
-                });
+                        return opMode.saveTelemetryData("Right", "|p=%+.1f|s=+%d|Loc=%+d|Tgt=%+d|%s",
+                                getRightMotor().getPower(),
+                                getRightMotor() == M0 ? m0Speed : m1Speed,
+                                getRightMotor().getCurrentPosition(),
+                                getRightMotor().getTargetPosition(),
+                                getRightMotor() == M0 ? "M0" : "M1");
+                    }});
 
-        telemetry.addLine("Hook")
-                .addData("Pow", new Func<String>() {
+        telemetry.addLine("Hook: ")
+                .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%+.1f", hookMotor.getPower());
-                    }
-                })
-                .addData("Spd", new Func<String>() {
+                        return opMode.saveTelemetryData("Hook",
+                                "|p=%+.1f|s=%+d|Loc=%d z=%d",
+                                 hookMotor.getPower(), hookSpeed, hookMotor.getCurrentPosition(), hook0);
+                    }});
+        telemetry.addLine("ArmSwing: ")
+                .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%+d", hookSpeed);
-                    }
-                })
-                .addData("Loc", new Func<String>() {
+                        return opMode.saveTelemetryData("ArmSwing",
+                                "|p=%+.1f|s=%+d|Loc=%d z=%d",
+                                swingMotor.getPower(), armSwingSpeed, swingMotor.getCurrentPosition(), swing0
+                        );
+                    }});
+        telemetry.addLine("ArmExtension: ")
+                .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return String.format("%d z=%d", hookMotor.getCurrentPosition(), hook0);
-                    }
-                });
-
-        telemetry.addLine("Arm Swing")
-                .addData("Pow", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%+.1f", swingMotor.getPower());
-                    }
-                })
-                .addData("Spd", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%+d", armSwingSpeed);
-                    }
-                })
-                .addData("Loc", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%d zone=%d zero=%d", swingMotor.getCurrentPosition(), getArmSwingZone(), swing0);
-                    }
-                });
-        telemetry.addLine("Arm Extension")
-                .addData("Pow", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%+.1f", armExtensionMotor.getPower());
-                    }
-                })
-                .addData("Spd", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%+d", armExtensionSpeed);
-                    }
-                })
-                .addData("Loc", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("%d z=%d", armExtensionMotor.getCurrentPosition(), extension0);
-                    }
-                });
+                        return opMode.saveTelemetryData("ArmExtension",
+                                "|p=%+.1f|s=%+d|Loc=%d z=%d",
+                                armExtensionMotor.getPower(), armExtensionSpeed, armExtensionMotor.getCurrentPosition(), extension0
+                        );
+                    }});
     }
 
 
@@ -619,11 +597,6 @@ public class Robot
                 action.setStatus("EMERGENCY ARM EXTENSION STOP: Power was %.2f, speed was %d", previousArmExtensionPower, armExtensionSpeed);
                 setArmExtensionPower(action, 0);
             }
-            if (Math.abs(previousM0Power) >= 0.25 && Math.abs(m0Speed) < 10)
-            {
-                action.setStatus("EMERGENCY WHEEL STOP: Power was %.2f, speed was %d", previousM0Power, m0Speed);
-                M0.setPower(0);
-            }
         }
 
 
@@ -785,9 +758,9 @@ public class Robot
             if ( headingError > 10 )
                 // Too far off course, need to stop and turn
                 // Use 0 degrees so turn will just turn to the correct place
-                turnLeft(action, 0, 1);
+                turnLeft(action, 0, 3);
             else if ( headingError < -10 )
-                turnRight(action, 0, 1);
+                turnRight(action, 0, 3);
             else
             {
                 if (headingError > 0.0)
@@ -813,6 +786,10 @@ public class Robot
         action.finish();
     }
 
+    /**
+     * How far off is the robot from the correct heading?
+     * @return Degrees: < 0 ==> Robot needs to turn Right, >0 ==> Robot needs to turn Left
+     */
     private double getHeadingError() {
         return correctHeading - getTotalDegreesTurned();
     }
@@ -859,13 +836,13 @@ public class Robot
                 if ( headingError > 10 ) {
                     action.setStatus("Turning left because we're off by %.1f degrees (>10)", headingError);
                     // Use 0 degrees so turn will just turn to the correct place
-                    turnLeft(action, 0, 1);
+                    turnLeft(action, 0, 3);
                 }
                 else if ( headingError < -10 ) {
                     action.setStatus("Turning right because we're off by %.1f degrees (<-10)", headingError);
 
                     // Use 0 degrees so turn will just turn to the correct place
-                    turnRight(action, 0, 1);
+                    turnRight(action, 0, 3);
                 }
                 else
                 {
@@ -898,79 +875,98 @@ public class Robot
         correctHeading = getTotalDegreesTurned();
     }
 
-    public void turnRight(ActionTracker callingAction, double degrees, double speed)
-    {
+    public void turnRight(ActionTracker callingAction, double degrees, int turnTries) {
         ActionTracker action = callingAction.startChildAction(
-                "TurnRight", "TurnRight(%.0f, pow=%.2f)", degrees, speed);
+                "TurnRight", "TurnRightV2(%.0f)", degrees);
         correctHeading -= degrees;
 
-        double endHeading = correctHeading + TURN_APPROXIMATION;
-
-        double degreesToGo = endHeading - getTotalDegreesTurned();
-
-        while (degreesToGo < 0 && shouldRobotKeepRunning(action)) {
-            // Goal - Current
-            degreesToGo = endHeading - getTotalDegreesTurned();
-
-            if (degreesToGo > -40) {
-                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
-
-                spin(action, 0.35);
-            } else {
-                action.setStatus("%.1f degrees to go. (full speed)", degreesToGo);
-                spin(action, speed);
-            }
+        int count=0;
+        while ( Math.abs(getHeadingError()) > TURN_APPROXIMATION && count < turnTries && shouldRobotKeepRunning(callingAction) )
+        {
+            count++;
+            action.setStatus("Turn attempt %d", count);
+            turnToProperHeading(action);
         }
-        action.setStatus("Finished turning. Starting to stop when robot is %.1f degrees off of correct heading", getHeadingError());
-        stop(action, true);
-
-        action.finish("Finished turning. Wheels stopped. Robot is %.1f degrees off of correct heading", getHeadingError());
+        action.finish();
     }
 
+    public void turnLeft(ActionTracker callingAction, double degrees, int turnTries) {
+        ActionTracker action = callingAction.startChildAction(
+                "TurnLeft", "TurnLeftV2(%.0f)", degrees);
+        correctHeading += degrees;
 
-    public void turnLeft(ActionTracker callingAction, double degrees, double speed)
+        int count = 0;
+        while ( Math.abs(getHeadingError()) > TURN_APPROXIMATION && count < turnTries && shouldRobotKeepRunning(callingAction) )
+        {
+            count++;
+            action.setStatus("Turn attempt %d", count);
+            turnToProperHeading(action);
+        }
+        action.finish();
+    }
+
+    public void turnToProperHeading(ActionTracker callingAction)
     {
         ActionTracker action = callingAction.startChildAction(
-                "TurnLeft", "TurnLeft(%.0f, pow=%.2f)", degrees, speed);
+                "TurnToHeading", "TurnToHeding(%.2f degrees)", getHeadingError());
+        int encoderClicksToGo = (int) Math.abs(ENCODER_CLICKS_PER_ROTATION/360 * getHeadingError());
 
-        correctHeading += degrees;
-            
-        double endHeading = correctHeading - TURN_APPROXIMATION;
+        action.setStatus("Starting to turn: HeadingError=%+.1f and wheelEncoderClicks=%d",
+                getHeadingError(), encoderClicksToGo);
 
-        double degreesToGo = endHeading - getTotalDegreesTurned();
+        DcMotor.RunMode oldLeftMode = getLeftMotor().getMode();
+        DcMotor.RunMode oldRightMode = getRightMotor().getMode();
 
-        while (degreesToGo>0 && shouldRobotKeepRunning(action))
+        int leftPowerMultiple;
+        int rightPowerMultiple;
+
+        if(getHeadingError() < 0)
         {
-            // Goal - Current
-            degreesToGo = endHeading - getTotalDegreesTurned();
-
-            if(degreesToGo < 40)
-            {
-                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
-                spin(action, -0.35);
-            }
-            else
-            {
-                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
-                spin(action, -speed);
-            }
+            leftPowerMultiple = +1;
+            rightPowerMultiple = -1;
         }
-        action.setStatus("Finished turning. Starting to stop when robot is %.1f degrees off of correct heading", getHeadingError());
-        stop(action, true);
+        else
+        {
+            leftPowerMultiple = -1;
+            rightPowerMultiple = +1;
+        }
 
-        action.finish("Finished turning. Wheels stopped. Robot is %.1f degrees off of correct heading", getHeadingError());
+        getLeftMotor().setPower(0);
+        getLeftMotor().setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        getLeftMotor().setPower(leftPowerMultiple * TURN_POWER);
+        getLeftMotor().setTargetPosition(getLeftMotor().getCurrentPosition() + leftPowerMultiple * encoderClicksToGo);
+
+        getRightMotor().setPower(0);
+        getRightMotor().setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        getRightMotor().setPower(rightPowerMultiple * TURN_POWER);
+        getRightMotor().setTargetPosition(getRightMotor().getCurrentPosition() + rightPowerMultiple * encoderClicksToGo);
+
+        int i = 1;
+        while(shouldRobotKeepRunning(action) && (getLeftMotor().isBusy() || getRightMotor().isBusy()))
+        {
+            action.setStatus("Day %d: I'm still turning. I have %.1f degrees remaining", i, getHeadingError());
+            i++;
+        }
+
+        getLeftMotor().setMode(oldLeftMode);
+        getRightMotor().setMode(oldRightMode);
+
+        stop(action, true);
+        action.finish("Day %d: I finally finished my turn. The heading error is $.1f", i, getHeadingError());
     }
 
-    //Scooch
+
+    //Skooch
     public void skoochRight(ActionTracker callingAction)
     {
         ActionTracker action = callingAction.startChildAction("SkoochRight", null);
         resetCorrectHeading(action, "Skooching relative to where we were");
         inchmove(action,5,0.5);
-        turnRight(action, 20,0.5);
+        turnRight(action, 20, 1);
         inchmove(action, 5,0.5);
-        turnLeft(action,20,0.5);
+        turnLeft(action,20, 1);
         inchmoveBack(action,10,0.5, true);
+        stop(action, true);
         action.finish();
     }
     public void skoochLeft(ActionTracker callingAction)
@@ -978,10 +974,12 @@ public class Robot
         ActionTracker action = callingAction.startChildAction("SkoochLeft", null);
         resetCorrectHeading(action, "Skooching relative to where we were");
         inchmove(action,5,0.5);
-        turnLeft(action,20,0.5);
+        turnLeft(action,20, 1);
         inchmove(action,5,0.5);
-        turnRight(action,20,0.5);
+        turnRight(action,20, 1);
         inchmoveBack(action,10,0.5, true);
+        stop(action, true);
+        action.finish();
     }
 
     // Calibrations
@@ -1110,5 +1108,17 @@ public class Robot
             action.finish();
         }
         return robotVision;
+    }
+
+    public void resetDrivingEncoders(ActionTracker gamepad1Action, String s)
+    {
+        DcMotor.RunMode originalLeftMode = getLeftMotor().getMode();
+        DcMotor.RunMode originalRightMode = getRightMotor().getMode();
+
+        getLeftMotor().setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        getRightMotor().setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        getLeftMotor().setMode(originalLeftMode);
+        getRightMotor().setMode(originalRightMode);
     }
 }

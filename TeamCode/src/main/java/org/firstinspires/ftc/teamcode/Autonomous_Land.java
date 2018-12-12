@@ -54,11 +54,11 @@ public class Autonomous_Land extends AutonomousOpMode
 
         robot.resetCorrectHeading(opmodeAction, "Perpendicular to lander");
         robot.hookUp( opmodeAction, 1, false);
-        robot.turnRight(opmodeAction,15, 1);
+        robot.turnRight(opmodeAction,15, 3);
         // Make sure hook is out of the way
             robot.hookDown(opmodeAction,1, false);
             teamSleep(opmodeAction,250, "Hook to lower");
-        robot.turnLeft(opmodeAction,15, 1);
+        robot.turnLeft(opmodeAction,15, 3);
 
         robot.inchmove(opmodeAction,10,movingSpeed );
 
@@ -89,7 +89,7 @@ public class Autonomous_Land extends AutonomousOpMode
         //robot.stop(true);
 
         // turn towards crater and go (backwards) to depot
-        robot.turnRight(opmodeAction,155, 1);
+        robot.turnRight(opmodeAction,155, 3);
         robot.inchmoveBack(opmodeAction,28,movingSpeed, true);
         opmodeAction.setStatus("At Depot");
         //robot.stop(true);
@@ -111,25 +111,25 @@ public class Autonomous_Land extends AutonomousOpMode
 
     private void boopLeftMineral(double movingSpeed)
     {
-        robot.turnLeft(opmodeAction, 45, 1);
+        robot.turnLeft(opmodeAction, 45, 3);
         robot.inchmove(opmodeAction, 20,movingSpeed);
         robot.inchmoveBack(opmodeAction, 14,movingSpeed, false);
-        robot.turnLeft(opmodeAction, 45,1);
+        robot.turnLeft(opmodeAction, 45, 3);
     }
 
     private void boopMiddleMineral(double movingSpeed)
     {
         robot.inchmove(opmodeAction, 15,movingSpeed);
         robot.inchmoveBack(opmodeAction, 6,movingSpeed, false);
-        robot.turnLeft(opmodeAction, 90,1);
+        robot.turnLeft(opmodeAction, 90, 3);
     }
 
     private void boopRightMineral(double movingSpeed)
     {
-        robot.turnRight(opmodeAction, 45,1);
+        robot.turnRight(opmodeAction, 45, 3);
         robot.inchmove(opmodeAction, 20,movingSpeed);
         robot.inchmoveBack(opmodeAction, 14,movingSpeed, false);
-        robot.turnLeft(opmodeAction, 140,1);
+        robot.turnLeft(opmodeAction, 140, 3);
     }
 
 }

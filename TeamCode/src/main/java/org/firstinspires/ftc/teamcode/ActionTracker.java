@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.util.RobotLog;
+import static org.firstinspires.ftc.teamcode.TeamUtils.*;
 
 /**
  * Keep track of robot actions: what is happening and reason?
@@ -127,20 +128,6 @@ public class ActionTracker {
         else
             RobotLog.ww(Robot.ROBOT_TAG, "%s<%s: Done",
                     messageIndentationString, toShortString());
-    }
-
-    private String safeStringFormat(String format, Object... args) {
-        try {
-            String result = String.format(format, args);
-            return result;
-        }
-        catch (RuntimeException e)
-        {
-            RobotLog.ww(Robot.ROBOT_TAG, "%s%s: FORMATTING ERROR: format=%s: %s",
-                    messageIndentationString, toShortString(), format, e.getMessage());
-
-            return String.format("FORMAT ERROR: %s", format);
-        }
     }
 
 

@@ -30,5 +30,28 @@ public class MotorControllerTest extends TeleOpMode
             while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_up)
             {}
         }
+        if(gamepad1.dpad_down)
+        {
+            // Reset values and Spin for 10k clicks
+            robot.resetCorrectHeading( gamepad1Action, "Measuring turning for 10k clicks");
+            robot.resetDrivingEncoders(gamepad1Action, "Measuring turning for 10k clicks");
+
+            robot.getLeftMotor().setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.getLeftMotor().setTargetPosition(lCurrentPosition + 10000);
+            robot.getLeftMotor().setPower(0.5);
+            robot.getRightMotor().setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.getRightMotor().setTargetPosition(rCurrentPosition - 10000);
+            robot.getRightMotor().setPower(-0.5);
+
+            //Wait until robot has reached target positions
+            while((robot.getLeftMotor().isBusy() || robot.getRightMotor().isBusy()) && shouldOpModeKeepRunning(gamepad1Action))
+            {
+            }
+            robot.stop(gamepad1Action, true);
+
+            //Wait until button is released before switching front and back
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_up)
+            {}
+        }
     }
 }

@@ -13,48 +13,16 @@ abstract class TeleOpMode extends BaseLinearOpMode {
         gamepad2Action = opmodeAction.startChildAction("GamePad2", null);
 
         telemetry.addLine("GP1:")
-                .addData("B", new Func<String>() {
+                .addData("", new Func<String>() {
                     @Override public String value() {
-                        return String.format("ABXY=%s%s%s%s", bool2tf(gamepad1.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
-                    }})
-                .addData("D", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("LUDR=%s%s%s%s", bool2tf(gamepad1.dpad_left), bool2tf(gamepad1.dpad_up), bool2tf(gamepad1.dpad_down), bool2tf(gamepad1.dpad_right));
-                    }})
-                .addData("LJS", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad1.left_stick_x, gamepad1.left_stick_y);
-                    }})
-                .addData("LTrig/Bump", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("%.2f/%s", gamepad1.left_trigger, bool2tf(gamepad1.left_bumper));
-                    }})
-                ;
-
+                        return saveTelemetryData("GP1", gamepad1.toString());
+                    }});
         telemetry.addLine("GP2:")
-                .addData("B", new Func<String>() {
+                .addData("", new Func<String>() {
                     @Override public String value() {
-                        return String.format("ABXY=%s%s%s%s", bool2tf(gamepad2.a), bool2tf(gamepad2.b), bool2tf(gamepad2.x), bool2tf(gamepad2.y));
-                    }})
-                .addData("D", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("LUDR=%s%s%s%s", bool2tf(gamepad2.dpad_left), bool2tf(gamepad2.dpad_up), bool2tf(gamepad2.dpad_down), bool2tf(gamepad2.dpad_right));
-                    }})
-                .addData("LJS", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad2.left_stick_x, gamepad2.left_stick_y);
-                    }})
-                .addData("LTrig/Bump", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("%.2f/%s", gamepad2.left_trigger, bool2tf(gamepad2.left_bumper));
-                    }})
-        ;
+                        return saveTelemetryData("GP2", gamepad2.toString());
+                    }});
     }
-
-    private String bool2tf(boolean b) {
-        return b ? "t" : "f";
-    }
-
 
     // First TeleOp thing that happens after play button is pressed
     public void teleOpStart()
@@ -165,7 +133,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
         if(gamepad1.dpad_left)
         {
             robot.resetCorrectHeading(gamepad1Action, "DPad: Turning left from current position");
-            robot.turnLeft(gamepad1Action,90,1);
+            robot.turnLeft(gamepad1Action,90, 3);
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_left)
@@ -174,7 +142,10 @@ abstract class TeleOpMode extends BaseLinearOpMode {
         if(gamepad1.dpad_right)
         {
             robot.resetCorrectHeading(gamepad1Action, "DPad: Turning right from current position");
-            robot.turnRight(gamepad1Action, 90,1);
+            if (gamepad1.a)
+                robot.turnRight(gamepad1Action, 180, 3);
+            else
+                robot.turnRight(gamepad1Action, 90, 3);
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_right)
