@@ -45,56 +45,55 @@ public class Autonomous_Land extends AutonomousOpMode
     void teamRun()
     {
         boolean debug = false;
-        double movingSpeed = 0.5;
+        double movingSpeed = 1;
 
         ///////////
-        // Ken : Shouldn't this go down below to right before the switch?
+        //Ken : Shouldn't this go down below to right before the switch?
         //robot.getRobotVision(opmodeAction).activate(opmodeAction);
         ///////////
 
         robot.resetCorrectHeading(opmodeAction, "Perpendicular to lander");
-        robot.hookUp( opmodeAction, 1, false);
-        robot.turnRight(opmodeAction,15, 3);
-        // Make sure hook is out of the way
-            robot.hookDown(opmodeAction,1, false);
-            teamSleep(opmodeAction,250, "Hook to lower");
-        robot.turnLeft(opmodeAction,15, 3);
+        robot.hookUp( opmodeAction, 1, true);
+        opmodeAction.setStatus("Landed");
+        
+        teamSleep(opmodeAction, 750, "Looking at minerals");
+        int goldLocation = getGoldLocation();
 
-        robot.inchmove(opmodeAction,10,movingSpeed );
+        robot.turnLeft(opmodeAction, 20);
+        robot.hookDown(opmodeAction, 1, false);
 
-        ////////////
-        // Right here? so the vision doesn't activate until we've straightened out?
-        robot.getRobotVision(opmodeAction).activate(opmodeAction);
-        ////////////
-
-        switch(getGoldLocation())
+        switch(goldLocation)
         {
             case 2:
-                boopRightMineral(movingSpeed);
+                boopRightMineralAndGoToWall(movingSpeed);
                 break;
             case 1:
-                boopMiddleMineral(movingSpeed);
+                boopMiddleMineralAndGoToWall(movingSpeed);
                 break;
             default:
-                boopLeftMineral(movingSpeed);
+                boopLeftMineralAndGoToWall(movingSpeed);
                 break;
         }
         opmodeAction.setStatus("Done from boopping mineral");
         robot.getRobotVision(opmodeAction).deactivate(opmodeAction);
 
-        // go to wall
+        //Go to the wall
         robot.stop(opmodeAction,true);
-        robot.inchmove(opmodeAction,48,movingSpeed);
+        robot.inchmove(opmodeAction,48, movingSpeed);
         opmodeAction.setStatus("At wall");
-        //robot.stop(true);
 
-        // turn towards crater and go (backwards) to depot
-        robot.turnRight(opmodeAction,155, 3);
-        robot.inchmoveBack(opmodeAction,28,movingSpeed, true);
+        //Align on the wall
+        robot.turnRight(opmodeAction, 45);
+        robot.pushIntoWall(opmodeAction);
+        robot.resetCorrectHeading(opmodeAction, "Aligned with the wall");
+        robot.inchmoveBack(opmodeAction, 2, 1);
+
+        //Turn towards crater and go (backwards) to depot
+        robot.turnRight(opmodeAction,90);
+        robot.inchmoveBack(opmodeAction,28, movingSpeed);
         opmodeAction.setStatus("At Depot");
-        //robot.stop(true);
 
-        // At depot. Drop marker
+        //At depot. Drop marker
         robot.setSwingArmPower(opmodeAction,1);
         while(robot.getArmSwingZone() != 3 && shouldOpModeKeepRunning(opmodeAction)) {
             opmodeAction.setStatus("Arm not yet in swingZone 3");
@@ -103,33 +102,33 @@ public class Autonomous_Land extends AutonomousOpMode
         robot.startArmReset(opmodeAction);
         opmodeAction.setStatus("Dropped marker, heading to crater");
 
-        // go to crater
+        //Go to crater
         robot.inchmove(opmodeAction,61, movingSpeed);
         robot.hookDown(opmodeAction, 1, true);
         robot.calibrateEverything(opmodeAction);
     }
 
-    private void boopLeftMineral(double movingSpeed)
+    private void boopLeftMineralAndGoToWall(double movingSpeed)
     {
-        robot.turnLeft(opmodeAction, 45, 3);
+        robot.turnLeft(opmodeAction, 45);
         robot.inchmove(opmodeAction, 20,movingSpeed);
-        robot.inchmoveBack(opmodeAction, 14,movingSpeed, false);
-        robot.turnLeft(opmodeAction, 45, 3);
+        robot.inchmoveBack(opmodeAction, 14,movingSpeed);
+        robot.turnLeft(opmodeAction, 45);
     }
 
-    private void boopMiddleMineral(double movingSpeed)
+    private void boopMiddleMineralAndGoToWall(double movingSpeed)
     {
         robot.inchmove(opmodeAction, 15,movingSpeed);
-        robot.inchmoveBack(opmodeAction, 6,movingSpeed, false);
-        robot.turnLeft(opmodeAction, 90, 3);
+        robot.inchmoveBack(opmodeAction, 6,movingSpeed);
+        robot.turnLeft(opmodeAction, 90);
     }
 
-    private void boopRightMineral(double movingSpeed)
+    private void boopRightMineralAndGoToWall(double movingSpeed)
     {
-        robot.turnRight(opmodeAction, 45, 3);
+        robot.turnRight(opmodeAction, 45);
         robot.inchmove(opmodeAction, 20,movingSpeed);
-        robot.inchmoveBack(opmodeAction, 14,movingSpeed, false);
-        robot.turnLeft(opmodeAction, 140, 3);
+        robot.inchmoveBack(opmodeAction, 14,movingSpeed);
+        robot.turnLeft(opmodeAction, 140);
     }
 
 }
