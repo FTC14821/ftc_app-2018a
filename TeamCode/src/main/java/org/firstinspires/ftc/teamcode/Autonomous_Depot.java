@@ -2,9 +2,9 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-@TeleOp(name = "A: Land-DepotSide", group = "Autonomous")
+@TeleOp(name = "A: Land-Depot", group = "Autonomous")
 
-public class Autonomous_DepotSide extends AutonomousOpMode
+public class Autonomous_Depot extends AutonomousOpMode
 {
     @Override
     void teamInit()
@@ -60,7 +60,8 @@ public class Autonomous_DepotSide extends AutonomousOpMode
         int goldLocation = getGoldLocation();
         robot.getRobotVision(opmodeAction).deactivate(opmodeAction);
 
-        robot.turnRight(opmodeAction, 20);
+        robot.setDrivingPowers(opmodeAction, 0, -1);
+        teamSleep(opmodeAction, 250, "Turn off of the hook");
         robot.hookDown(opmodeAction, 1, false);
 
         switch(goldLocation)

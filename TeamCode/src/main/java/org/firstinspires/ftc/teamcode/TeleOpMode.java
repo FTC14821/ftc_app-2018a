@@ -130,27 +130,6 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             {}
         }
 
-        if(gamepad1.dpad_left)
-        {
-            robot.resetCorrectHeading(gamepad1Action, "DPad: Turning left from current position");
-            robot.turnLeft(gamepad1Action,90, 3);
-
-            //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_left)
-            {}
-        }
-        if(gamepad1.dpad_right)
-        {
-            robot.resetCorrectHeading(gamepad1Action, "DPad: Turning right from current position");
-            if (gamepad1.a)
-                robot.turnRight(gamepad1Action, 180, 3);
-            else
-                robot.turnRight(gamepad1Action, 90, 3);
-
-            //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_right)
-            {}
-        }
 
         /*
         if(gamepad1.dpad_up)

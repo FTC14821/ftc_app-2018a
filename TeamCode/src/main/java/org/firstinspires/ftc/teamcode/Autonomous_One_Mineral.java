@@ -17,15 +17,15 @@ public class Autonomous_One_Mineral extends AutonomousOpMode
         void teamRun()
         {
                 robot.hookUp(opmodeAction, 1, false);
-                robot.turnRight(opmodeAction, 15, 3);
+                robot.turnRight(opmodeAction, 15);
                 robot.hookDown(opmodeAction, 1, false);
                 robot.inchmove( opmodeAction, 5, 0.4);
                 robot.stop(opmodeAction, false);
-                robot.turnLeft(opmodeAction, 60, 3);
+                robot.turnLeft(opmodeAction, 60);
                 robot.inchmove(opmodeAction, 30, 1);
-                robot.turnLeft(opmodeAction, 90, 3);
+                robot.turnLeft(opmodeAction, 90);
                 robot.inchmove(opmodeAction, 30, 1);
-                robot.turnLeft(opmodeAction, 180, 3);
+                robot.turnLeft(opmodeAction, 180);
                 //FLING THE MARKER
                 robot.inchmove(opmodeAction, 75,1);
                 //FLING THE MARKER ARM INTO THE CRATER AFTER EXTENDOING THE ARM

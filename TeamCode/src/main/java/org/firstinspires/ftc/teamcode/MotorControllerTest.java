@@ -1,10 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp(name = "T: MotorControllerTest", group = "Tinkering")
-
+@Disabled
 public class MotorControllerTest extends TeleOpMode
 {
 
@@ -15,6 +16,36 @@ public class MotorControllerTest extends TeleOpMode
         int lCurrentPosition = robot.getLeftMotor().getCurrentPosition();
         int rCurrentPosition = robot.getRightMotor().getCurrentPosition();
         int clicksPerFoot = (int)(79.27 * 12);
+
+        if(gamepad1.dpad_left)
+        {
+            robot.getLeftMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.getRightMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+
+            //Wait until button is released before switching front and back
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_left)
+            {
+                robot.getLeftMotor().setPower(-Math.max(gamepad1.right_trigger,0.05));
+                robot.getRightMotor().setPower(+Math.max(gamepad1.right_trigger,0.05));
+            }
+            robot.getLeftMotor().setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            robot.getRightMotor().setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            robot.stop(gamepad1Action, true);
+        }
+
+        if(gamepad1.dpad_right)
+        {
+            robot.resetCorrectHeading(gamepad1Action, "DPad: Turning right from current position");
+            if (gamepad1.a)
+                robot.turnRight(gamepad1Action, 180);
+            else
+                robot.turnRight(gamepad1Action, 90);
+
+            //Wait until button is released before switching front and back
+            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_right)
+            {}
+        }
 
         if(gamepad1.dpad_up)
         {

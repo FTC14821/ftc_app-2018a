@@ -18,13 +18,13 @@ public class Robot
     // Found via experiment
     public static final double ENCODER_CLICKS_PER_INCH = 79.27;
     private static final double ENCODER_CLICKS_PER_ROTATION = 4350;
+    public static final double TURN_POWER = 0.35;
+    public static final double TURN_SLOWDOWN_POWER = 0.05;
+    public static final int TURN_SLOWDOWN_DEGREES = 10;
     // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
     public final int MAX_HOOK_DISTANCE = 27500;
     public final int MAX_SWING_ARM_DISTANCE = 2200;
     public final int MAX_ARM_EXTENSION_DISTANCE = 12800;
-
-    // Does not skid
-    public static final double TURN_POWER = 0.5;
 
     final Telemetry telemetry;
     final HardwareMap hardwareMap;
@@ -729,8 +729,8 @@ public class Robot
 
         double startPosition = getWheelPosition();
 
-        double encoderClicks = inches * ENCODER_CLICKS_PER_INCH;
-        double stopPosition = getWheelPosition() + encoderClicks;
+        int encoderClicks = (int) Math.round(inches * ENCODER_CLICKS_PER_INCH);
+        int stopPosition = getWheelPosition() + encoderClicks;
 
         action.setStatus("Starting to move for %d encoder clicks", encoderClicks);
 
@@ -758,9 +758,9 @@ public class Robot
             if ( headingError > 10 )
                 // Too far off course, need to stop and turn
                 // Use 0 degrees so turn will just turn to the correct place
-                turnLeft(action, 0, 3);
+                turnLeft(action, 0);
             else if ( headingError < -10 )
-                turnRight(action, 0, 3);
+                turnRight(action, 0);
             else
             {
                 if (headingError > 0.0)
@@ -794,11 +794,11 @@ public class Robot
         return correctHeading - getTotalDegreesTurned();
     }
 
-    public void inchmoveBack(ActionTracker callingAction, double inches, double power, boolean correctSteering)
+    public void inchmoveBack(ActionTracker callingAction, double inches, double power)
     {
         ActionTracker action = callingAction.startChildAction(
-                "InchMoveBack", "InchmoveBack(d=%.1fin, pow=%.1f, steer=%s)",
-                inches, power, correctSteering ? "corrected" : "no-correction");
+                "InchMoveBack", "InchmoveBack(d=%.1fin, pow=%.1f)",
+                inches, power);
 
         int startPosition = getWheelPosition();
 
@@ -807,7 +807,8 @@ public class Robot
 
         action.setStatus("Starting to move for %d encoder clicks", encoderClicks);
 
-        while (shouldRobotKeepRunning(action) && getWheelPosition() >= stopPosition) {
+        while (shouldRobotKeepRunning(action) && getWheelPosition() >= stopPosition)
+        {
 
             // avoid skidding by using less power for first 10 inches
             double wheelPower;
@@ -816,54 +817,50 @@ public class Robot
             else
                 wheelPower = power;
 
-            if(correctSteering)
-            {
-                //Heading is larger to the left
-                // Example:
-                //   correctHeading: 0  (straight ahead)
-                //   currentHeading: -5 (negative is to the right)
-                //   HeadingError: 5 ==> Need to turn 5 degrees to the left
+            //Heading is larger to the left
+            // Example:
+            //   correctHeading: 0  (straight ahead)
+            //   currentHeading: -5 (negative is to the right)
+            //   HeadingError: 5 ==> Need to turn 5 degrees to the left
 
-                double headingError = getHeadingError();
+            double headingError = getHeadingError();
 
-                action.setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees(robot front facing too far %s)",
-                        (stopPosition - getWheelPosition()) / ENCODER_CLICKS_PER_INCH,
-                        headingError,
-                        headingError > 0 ? "right" : "left"
-                        ));
+            action.setStatus(String.format("%.1f inches to go. Heading error: %.1f degrees(robot front facing too far %s)",
+                    (stopPosition - getWheelPosition()) / ENCODER_CLICKS_PER_INCH,
+                    headingError,
+                    headingError > 0 ? "right" : "left"
+                    ));
 
 
-                if ( headingError > 10 ) {
-                    action.setStatus("Turning left because we're off by %.1f degrees (>10)", headingError);
-                    // Use 0 degrees so turn will just turn to the correct place
-                    turnLeft(action, 0, 3);
-                }
-                else if ( headingError < -10 ) {
-                    action.setStatus("Turning right because we're off by %.1f degrees (<-10)", headingError);
+            if ( headingError > 10 ) {
+                action.setStatus("Turning left because we're off by %.1f degrees (>10)", headingError);
+                // Use 0 degrees so turn will just turn to the correct place
+                turnLeft(action, 0);
+            }
+            else if ( headingError < -10 ) {
+                action.setStatus("Turning right because we're off by %.1f degrees (<-10)", headingError);
 
-                    // Use 0 degrees so turn will just turn to the correct place
-                    turnRight(action, 0, 3);
-                }
-                else
-                {
-                    action.setStatus("Using proportional steering because we're off by %.1f degrees", headingError);
-
-                    if (headingError > 0.0) {
-                        //The current heading is too small so we turn to the right
-                        // (opposite of inchMoveForward because we're going backwards)
-                        setPowerSteering(action, -wheelPower, 0.1 * Math.abs(headingError));
-                    } else if (headingError < 0.0) {
-                        //Current heading is too big, so we steer to the left (again since we're going backwards)
-                        setPowerSteering(action, -wheelPower, -0.1 * Math.abs(headingError));
-                    } else {
-                        // Go Straight
-                        driveStraight(action, -wheelPower);
-                    }
-                }
+                // Use 0 degrees so turn will just turn to the correct place
+                turnRight(action, 0);
             }
             else
-                driveStraight(action, -wheelPower);
+            {
+                action.setStatus("Using proportional steering because we're off by %.1f degrees", headingError);
+
+                if (headingError > 0.0) {
+                    //The current heading is too small so we turn to the right
+                    // (opposite of inchMoveForward because we're going backwards)
+                    setPowerSteering(action, -wheelPower, 0.1 * Math.abs(headingError));
+                } else if (headingError < 0.0) {
+                    //Current heading is too big, so we steer to the left (again since we're going backwards)
+                    setPowerSteering(action, -wheelPower, -0.1 * Math.abs(headingError));
+                } else {
+                    // Go Straight
+                    driveStraight(action, -wheelPower);
+                }
+            }
         }
+
         stop(action, true);
         action.finish();
     }
@@ -875,7 +872,7 @@ public class Robot
         correctHeading = getTotalDegreesTurned();
     }
 
-    public void turnRight(ActionTracker callingAction, double degrees, int turnTries) {
+    public void turnRightWithProperHeading(ActionTracker callingAction, double degrees, int turnTries) {
         ActionTracker action = callingAction.startChildAction(
                 "TurnRight", "TurnRightV2(%.0f)", degrees);
         correctHeading -= degrees;
@@ -890,7 +887,7 @@ public class Robot
         action.finish();
     }
 
-    public void turnLeft(ActionTracker callingAction, double degrees, int turnTries) {
+    public void turnLeftWithProperHeading(ActionTracker callingAction, double degrees, int turnTries) {
         ActionTracker action = callingAction.startChildAction(
                 "TurnLeft", "TurnLeftV2(%.0f)", degrees);
         correctHeading += degrees;
@@ -956,16 +953,177 @@ public class Robot
     }
 
 
+    public void turnRight(ActionTracker callingAction, double degrees)
+    {
+        ActionTracker action = callingAction.startChildAction(
+                "TurnRight", "TurnRight(%.0f)", degrees);
+        correctHeading -= degrees;
+
+        double endHeading = correctHeading + TURN_APPROXIMATION;
+
+        double degreesToGo = endHeading - getTotalDegreesTurned();
+
+        DcMotor.RunMode originalRightMode = getRightMotor().getMode();
+        DcMotor.RunMode originalLeftMode = getLeftMotor().getMode();
+
+        getRightMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        getLeftMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        while (degreesToGo < 0 && shouldRobotKeepRunning(action)) {
+            // Goal - Current
+            degreesToGo = endHeading - getTotalDegreesTurned();
+
+            if (degreesToGo > -TURN_SLOWDOWN_DEGREES) {
+                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
+
+                spin(action, TURN_SLOWDOWN_POWER);
+            } else {
+                action.setStatus("%.1f degrees to go. (full speed)", degreesToGo);
+                spin(action, TURN_POWER);
+            }
+        }
+        action.setStatus("Finished turning. Starting to stop when robot is %.1f degrees off of correct heading", getHeadingError());
+        stop(action, true);
+
+        getRightMotor().setMode(originalRightMode);
+        getLeftMotor().setMode(originalLeftMode);
+
+        action.finish("Finished turning. Wheels stopped. Robot is %.1f degrees off of correct heading", getHeadingError());
+    }
+
+
+    public void turnLeft(ActionTracker callingAction, double degrees)
+    {
+        ActionTracker action = callingAction.startChildAction(
+                "TurnLeft", "TurnLeft(%.0f)", degrees);
+
+        correctHeading += degrees;
+
+        double endHeading = correctHeading - TURN_APPROXIMATION;
+
+        double degreesToGo = endHeading - getTotalDegreesTurned();
+
+        DcMotor.RunMode originalLeftMode = getLeftMotor().getMode();
+        DcMotor.RunMode originalRightMode = getRightMotor().getMode();
+
+        getLeftMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        getRightMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        while(degreesToGo > 0 && shouldRobotKeepRunning(action))
+        {
+            // Goal - Current
+            degreesToGo = endHeading - getTotalDegreesTurned();
+
+            if(degreesToGo < TURN_SLOWDOWN_DEGREES)
+            {
+                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
+                spin(action, -TURN_SLOWDOWN_POWER);
+            }
+            else
+            {
+                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
+                spin(action, -TURN_POWER);
+            }
+        }
+        action.setStatus("Finished turning. Starting to stop when robot is %.1f degrees off of correct heading", getHeadingError());
+        stop(action, true);
+
+        getLeftMotor().setMode(originalLeftMode);
+        getRightMotor().setMode(originalRightMode);
+
+        action.finish("Finished turning. Wheels stopped. Robot is %.1f degrees off of correct heading", getHeadingError());
+    }
+
+    public void pivotTurnLeft(ActionTracker callingAction, double degrees)
+    {
+        ActionTracker action = callingAction.startChildAction(
+                "PivotTurnLeft", "PivotTurnLeft(%.0f)", degrees);
+
+        correctHeading += degrees;
+
+        double endHeading = correctHeading - TURN_APPROXIMATION;
+
+        double degreesToGo = endHeading - getTotalDegreesTurned();
+
+        DcMotor.RunMode originalLeftMode = getLeftMotor().getMode();
+        DcMotor.RunMode originalRightMode = getRightMotor().getMode();
+
+        getLeftMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        getRightMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        while(degreesToGo > 0 && shouldRobotKeepRunning(action))
+        {
+            // Goal - Current
+            degreesToGo = endHeading - getTotalDegreesTurned();
+
+            if(degreesToGo < TURN_SLOWDOWN_DEGREES)
+            {
+                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
+                setDrivingPowers(action, -TURN_SLOWDOWN_POWER, 0);
+            }
+            else
+            {
+                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
+                setDrivingPowers(action, -TURN_POWER, 0);
+            }
+        }
+        action.setStatus("Finished turning. Starting to stop when robot is %.1f degrees off of correct heading", getHeadingError());
+        stop(action, true);
+
+        getLeftMotor().setMode(originalLeftMode);
+        getRightMotor().setMode(originalRightMode);
+
+        action.finish("Finished turning. Wheels stopped. Robot is %.1f degrees off of correct heading", getHeadingError());
+    }
+
+    public void pivotTurnRight(ActionTracker callingAction, double degrees) {
+        ActionTracker action = callingAction.startChildAction(
+                "PivotTurnRight", "PivotTurnRight(%.0f)", degrees);
+
+        correctHeading -= degrees;
+
+        double endHeading = correctHeading + TURN_APPROXIMATION;
+
+        double degreesToGo = endHeading - getTotalDegreesTurned();
+
+        DcMotor.RunMode originalRightMode = getRightMotor().getMode();
+        DcMotor.RunMode originalLeftMode = getLeftMotor().getMode();
+
+        getRightMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        getLeftMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        while (degreesToGo < 0 && shouldRobotKeepRunning(action)) {
+            // Goal - Current
+            degreesToGo = endHeading - getTotalDegreesTurned();
+
+            if (degreesToGo > -TURN_SLOWDOWN_DEGREES) {
+                action.setStatus("%.1f degrees to go. (slower turn)", degreesToGo);
+
+                setDrivingPowers(action, 0, +TURN_SLOWDOWN_POWER);
+            } else {
+                action.setStatus("%.1f degrees to go. (full speed)", degreesToGo);
+                setDrivingPowers(action, 0, +TURN_POWER);
+            }
+        }
+        action.setStatus("Finished turning. Starting to stop when robot is %.1f degrees off of correct heading", getHeadingError());
+        stop(action, true);
+
+        getRightMotor().setMode(originalRightMode);
+        getLeftMotor().setMode(originalLeftMode);
+
+        action.finish("Finished turning. Wheels stopped. Robot is %.1f degrees off of correct heading", getHeadingError());
+    }
+
     //Skooch
     public void skoochRight(ActionTracker callingAction)
     {
         ActionTracker action = callingAction.startChildAction("SkoochRight", null);
         resetCorrectHeading(action, "Skooching relative to where we were");
         inchmove(action,5,0.5);
-        turnRight(action, 20, 1);
+        turnRight(action, 20);
         inchmove(action, 5,0.5);
-        turnLeft(action,20, 1);
-        inchmoveBack(action,10,0.5, true);
+        turnLeft(action,20);
+        inchmoveBack(action,10,0.5);
         stop(action, true);
         action.finish();
     }
@@ -974,10 +1132,10 @@ public class Robot
         ActionTracker action = callingAction.startChildAction("SkoochLeft", null);
         resetCorrectHeading(action, "Skooching relative to where we were");
         inchmove(action,5,0.5);
-        turnLeft(action,20, 1);
+        turnLeft(action,20);
         inchmove(action,5,0.5);
-        turnRight(action,20, 1);
-        inchmoveBack(action,10,0.5, true);
+        turnRight(action,20);
+        inchmoveBack(action,10,0.5);
         stop(action, true);
         action.finish();
     }
@@ -1120,5 +1278,23 @@ public class Robot
 
         getLeftMotor().setMode(originalLeftMode);
         getRightMotor().setMode(originalRightMode);
+    }
+
+    public void pushIntoWall(ActionTracker callingAction)
+    {
+        ActionTracker action = callingAction.startChildAction("Pushing the wall", null);
+
+        DcMotor.RunMode originalLeftMode = getLeftMotor().getMode();
+        DcMotor.RunMode originalRightMode = getRightMotor().getMode();
+
+        getLeftMotor().setPower(0.25);
+        getRightMotor().setPower(0.25);
+
+        opMode.teamSleep(action, 2500, "Keep motors running for half a second");
+
+        getLeftMotor().setMode(originalLeftMode);
+        getRightMotor().setMode(originalRightMode);
+
+        action.finish();
     }
 }

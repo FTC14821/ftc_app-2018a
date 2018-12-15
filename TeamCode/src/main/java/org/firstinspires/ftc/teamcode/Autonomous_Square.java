@@ -11,8 +11,8 @@ public class Autonomous_Square extends AutonomousOpMode
         {
                 while(true)
                 {
-                        robot.inchmove(opmodeAction,  80, 1);
-                        robot.turnLeft(opmodeAction, 90, 3);
+                        robot.inchmove(opmodeAction,  10, 0.5);
+                        robot.turnLeft(opmodeAction, 90);
                 }
         }
 }

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm -f /tmp/logcat.*; ~/Library/Android/sdk/platform-tools/adb logcat | split -b 5m -a5 - /tmp/logcat.
+

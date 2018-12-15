@@ -48,6 +48,8 @@ import java.util.List;
  *
  */
 public class RobotVision  {
+    private static final double RECOGNITION_CONFIDENCE_STANDARD = 0.80;
+
     public enum DETECTABLE_OBJECTS {GOLD, SILVER};
 
     private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
@@ -111,38 +113,25 @@ public class RobotVision  {
     private void initTelemtry()
     {
         robot.telemetry.addLine("Vision")
-                .addData("", new Func<String>()
-                {
+                .addData("", new Func<String>() {
                     @Override
-                    public String value()
-                    {
+                    public String value() {
+                        String status;
                         if (vuforia == null)
-                            return "Vuforia failure";
+                            status = "Vuforia failure";
                         else if (tfod == null)
-                            return "TFObjectDetector failure";
+                            status = "TFObjectDetector failure";
                         else if (!tfodIsActive)
-                            return "Vision ready but inactive";
+                            status = "Vision ready but inactive";
                         else
-                            return "Active";
+                            status = "Active";
+
+                        return robot.opMode.saveTelemetryData(
+                                "Vision",
+                                "%s: #%d, Colors L->R: %s",
+                                status, objectsFromLeftToRight.size(), objectColorStringFromLeftToRight);
                     }
-                })
-                .addData("#", new Func<Integer>()
-                {
-                    @Override
-                    public Integer value()
-                    {
-                        return objectsFromLeftToRight.size();
-                    }
-                })
-                .addData("Colors", new Func<String>()
-                {
-                    @Override
-                    public String value()
-                    {
-                        return objectColorStringFromLeftToRight;
-                    }
-                })
-                ;
+                });
     }
 
     public boolean isReady()
@@ -191,24 +180,39 @@ public class RobotVision  {
                 @Override
                 public int compare(Recognition object1, Recognition object2)
                 {
-                    if (object1.getLeft() < object2.getLeft())
+                    if (object1.getTop() < object2.getTop())
                         return -1;
-                    else if (object1.getLeft() > object2.getLeft())
+                    else if (object1.getTop() > object2.getTop())
                         return +1;
                     else
                         return 0;
                 }
             });
 
-            rememberLatestObjectRecogniations(updatedRecognitions);
+            rememberLatestObjectRecogniations(action, updatedRecognitions);
         }
     }
 
-    private void rememberLatestObjectRecogniations(List<Recognition> updatedRecognitions)
+    private void rememberLatestObjectRecogniations(ActionTracker callingAction, List<Recognition> updatedRecognitions)
     {
         // We save the objects three different ways (as Recogitions, as enumerated colors and as a string
         objectsFromLeftToRight.clear();
-        objectsFromLeftToRight.addAll(updatedRecognitions);
+
+        for ( Recognition recog : updatedRecognitions )
+        {
+            if (recog.getConfidence() > RECOGNITION_CONFIDENCE_STANDARD)
+            {
+                callingAction.setStatus("Found object with sufficient recognition: %s", recog);
+                objectsFromLeftToRight.add(recog);
+            }
+            else
+            {
+                callingAction.setStatus("Found object with insufficient recognition: %s", recog);
+            }
+        }
+
+        callingAction.setStatus("%d out of %d recognizied objects met recognition standard %.2f",
+            objectsFromLeftToRight.size(), updatedRecognitions.size(), RECOGNITION_CONFIDENCE_STANDARD);
 
         objectColorsFromLeftToRight.clear();
 

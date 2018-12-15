@@ -1,11 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import static java.lang.Math.abs;
 
 @TeleOp(name = "T: JoyStickControl", group = "Tinkering")
-
+@Disabled
 public class JoyStickControl extends TeleOpMode
 {
 
