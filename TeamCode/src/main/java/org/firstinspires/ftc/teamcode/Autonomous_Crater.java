@@ -96,7 +96,7 @@ public class Autonomous_Crater extends AutonomousOpMode
         // We start 20deg turned right from the lander
         ActionTracker action = callingAction.startChildAction("middleMineral", null);
         action.setStatus("Heading towards mineral");
-        robot.inchmove(opmodeAction, 20, .75);
+        robot.inchmove(opmodeAction, 26, .75);
 
         action.finish();
     }
@@ -108,7 +108,7 @@ public class Autonomous_Crater extends AutonomousOpMode
         action.setStatus("Moving away from lander");
         robot.inchmove(opmodeAction, 2, movingSpeed);
         action.setStatus("Turning and moving towards mineral");
-        robot.turnRight(opmodeAction, 30);
+        robot.turnRight(opmodeAction, 40);
         robot.inchmove(opmodeAction, 28, 0.75);
 
         action.finish();

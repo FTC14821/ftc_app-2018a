@@ -21,7 +21,7 @@ public class Autonomous_Depot extends AutonomousOpMode
         ActionTracker action = opmodeAction.startChildAction("GetGoldLocation", null);
 
         long start = System.currentTimeMillis();
-        long endTime = start + 5000;
+        long endTime = start + 1000;
         RobotVision robotVision = robot.getRobotVision(action);
 
         while(shouldOpModeKeepRunning(action) && robotVision.objectColorsFromLeftToRight.size() != 2 && System.currentTimeMillis() < endTime)
@@ -44,90 +44,80 @@ public class Autonomous_Depot extends AutonomousOpMode
     @Override
     void teamRun()
     {
+        int goldLocation = getGoldLocation();
+        opmodeAction.setStatus("Gold location: %d", goldLocation);
+
         boolean debug = false;
         double movingSpeed = 1;
-
-        ///////////
-        //Ken : Shouldn't this go down below to right before the switch?
-        //robot.getRobotVision(opmodeAction).activate(opmodeAction);
-        ///////////
 
         robot.resetCorrectHeading(opmodeAction, "Perpendicular to lander");
         robot.hookUp( opmodeAction, 1, true);
         opmodeAction.setStatus("Landed");
 
-        teamSleep(opmodeAction, 750, "Looking at minerals");
-        int goldLocation = getGoldLocation();
-        robot.getRobotVision(opmodeAction).deactivate(opmodeAction);
-
         robot.setDrivingPowers(opmodeAction, 0, -1);
-        teamSleep(opmodeAction, 250, "Turn off of the hook");
         robot.hookDown(opmodeAction, 1, false);
+        teamSleep(opmodeAction, 1000, "Get unhooked");
+        robot.stop(opmodeAction, false);
+
+        teamSleep(opmodeAction, 750, "Getting hook out of way");
 
         switch(goldLocation)
         {
             case 2:
-                boopRightMineralAndGoToWall(movingSpeed);
+                boopRightMineral(opmodeAction, movingSpeed);
                 break;
             case 1:
-                boopMiddleMineralAndGoToWall(movingSpeed);
+                boopMiddleMineral(opmodeAction, movingSpeed);
                 break;
             default:
-                boopLeftMineralAndGoToWall(movingSpeed);
+                boopLeftMineral(opmodeAction, movingSpeed);
                 break;
         }
-
-        opmodeAction.setStatus("Done from boopping mineral and getting to wall");
-
-        robot.pushIntoWall(opmodeAction);
-        robot.resetCorrectHeading(opmodeAction, "Aligned with the wall");
-        robot.inchmoveBack(opmodeAction, 2, 1);
-
-        // Turn towards crater
-        robot.turnLeft(opmodeAction, 90);
-        robot.inchmove(opmodeAction, 20, 0.5);
-
-        //Turn towards crater and go (backwards) to depot
-        robot.turnRight(opmodeAction,90);
-        robot.inchmoveBack(opmodeAction,28, movingSpeed);
-        opmodeAction.setStatus("At Depot");
-
-        //At depot. Drop marker
-        robot.setSwingArmPower(opmodeAction,1);
-        while(robot.getArmSwingZone() != 3 && shouldOpModeKeepRunning(opmodeAction)) {
-            opmodeAction.setStatus("Arm not yet in swingZone 3");
-        }
-        robot.setSwingArmPower(opmodeAction, 0);
-        robot.startArmReset(opmodeAction);
-        opmodeAction.setStatus("Dropped marker, heading to crater");
-
-        //Go to crater
-        robot.inchmove(opmodeAction,61, movingSpeed);
+        robot.stop(opmodeAction, true);
         robot.hookDown(opmodeAction, 1, true);
-        robot.calibrateEverything(opmodeAction);
     }
 
-    private void boopLeftMineralAndGoToWall(double movingSpeed)
+    private void boopLeftMineral(ActionTracker callingAction, double movingSpeed)
     {
-        robot.turnLeft(opmodeAction, 45);
-        robot.inchmove(opmodeAction, 20,movingSpeed);
-        robot.inchmoveBack(opmodeAction, 14,movingSpeed);
-        robot.turnLeft(opmodeAction, 45);
+        ActionTracker action = callingAction.startChildAction("LeftMineral", null);
+        robot.inchmove(opmodeAction, 2, movingSpeed);
+        action.setStatus("Heading towards mineral");
+        robot.turnLeft(opmodeAction, 30);
+        robot.inchmove(opmodeAction, 28, 0.75);
+        action.setStatus("Turning to crater");
+        robot.turnRight(opmodeAction, 30);
+        robot.inchmove(opmodeAction, 5, 0.5);
+
+        action.finish();
     }
 
-    private void boopMiddleMineralAndGoToWall(double movingSpeed)
+    private void boopMiddleMineral(ActionTracker callingAction, double movingSpeed)
     {
-        robot.inchmove(opmodeAction, 15,movingSpeed);
-        robot.inchmoveBack(opmodeAction, 6,movingSpeed);
-        robot.turnLeft(opmodeAction, 90);
+        // We start 20deg turned right from the lander
+        ActionTracker action = callingAction.startChildAction("middleMineral", null);
+        action.setStatus("Heading towards mineral");
+        robot.inchmove(opmodeAction, 42, 0.75);
+        robot.turnRight(opmodeAction, 180);
+        robot.inchmove(opmodeAction, 5, movingSpeed);
+        robot.setSwingArmPower(opmodeAction, 1);
+
+        action.finish();
     }
 
-    private void boopRightMineralAndGoToWall(double movingSpeed)
+    private void boopRightMineral(ActionTracker callingAction, double movingSpeed)
     {
-        robot.turnRight(opmodeAction, 45);
-        robot.inchmove(opmodeAction, 20,movingSpeed);
-        robot.inchmoveBack(opmodeAction, 14,movingSpeed);
-        robot.turnLeft(opmodeAction, 140);
+        // We start 20deg turned right from the lander
+        ActionTracker action = callingAction.startChildAction("rightMineral", null);
+        action.setStatus("Moving away from lander");
+        robot.inchmove(opmodeAction, 2, movingSpeed);
+        action.setStatus("Turning and moving towards mineral");
+        robot.turnRight(opmodeAction, 40);
+        robot.inchmove(opmodeAction, 40, 0.6);
+        robot.turnRight(opmodeAction, 100);
+        robot.inchmoveBack(opmodeAction, 12, movingSpeed);
+        robot.setSwingArmPower(opmodeAction, 1);
+
+        action.finish();
     }
 
 }

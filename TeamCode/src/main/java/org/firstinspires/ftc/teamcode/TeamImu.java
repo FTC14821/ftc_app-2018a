@@ -57,7 +57,7 @@ public class TeamImu  {
         lastHeading = getHeading();
 
         // Set up our telemetry dashboard
-        setupTelemetry(telemetry);
+        // setupTelemetry(telemetry);
 
         return this;
     }
