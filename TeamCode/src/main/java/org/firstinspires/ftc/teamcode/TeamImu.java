@@ -57,7 +57,7 @@ public class TeamImu  {
         lastHeading = getHeading();
 
         // Set up our telemetry dashboard
-        //setupTelemetry(telemetry);
+        setupTelemetry(telemetry);
 
         return this;
     }
@@ -109,46 +109,55 @@ public class TeamImu  {
     }
 
     void setupTelemetry(Telemetry telemetry) {
-        // At the beginning of each telemetry update, grab a bunch of data
-        // from the IMU that we will then display in separate lines.
-        telemetry.addAction(new Runnable() {
-            @Override
-            public void run() {
-                // Acquiring the angles is relatively expensive; we don't want
-                // to do that in each of the three items that need that info, as that's
-                // three times the necessary expense.
-                t_angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-                t_position = imu.getPosition();
-                t_linearAcceleration = imu.getLinearAcceleration();
-                t_velocity = imu.getVelocity();
-            }
-        });
-
         telemetry.addLine("IMU: ")
-                .addData("H", new Func<String>() {
+                .addData("", new Func<Object>() {
                     @Override
-                    public String value() {
-                        return formatAngle(t_angles.angleUnit, t_angles.firstAngle);
-                    }
-                })
-                .addData("R", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return formatAngle(t_angles.angleUnit, t_angles.secondAngle);
-                    }
-                })
-                .addData("P", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return formatAngle(t_angles.angleUnit, t_angles.thirdAngle);
-                    }
-                })
-                .addData("Acc", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return String.format("(%.1f, %.1f, %.1f)", t_linearAcceleration.xAccel, t_linearAcceleration.yAccel, t_linearAcceleration.zAccel);
+                    public Object value() {
+                        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+                        return String.format("Hdg: %.2f, Roll: %.2f, Pitch: %.2f",
+                                angles.firstAngle, angles.secondAngle, angles.thirdAngle);
                     }
                 });
+//        // At the beginning of each telemetry update, grab a bunch of data
+//        // from the IMU that we will then display in separate lines.
+//        telemetry.addAction(new Runnable() {
+//            @Override
+//            public void run() {
+//                // Acquiring the angles is relatively expensive; we don't want
+//                // to do that in each of the three items that need that info, as that's
+//                // three times the necessary expense.
+//                t_angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+//                t_position = imu.getPosition();
+//                t_linearAcceleration = imu.getLinearAcceleration();
+//                t_velocity = imu.getVelocity();
+//            }
+//        });
+//
+//        telemetry.addLine("IMU: ")
+//                .addData("H", new Func<String>() {
+//                    @Override
+//                    public String value() {
+//                        return formatAngle(t_angles.angleUnit, t_angles.firstAngle);
+//                    }
+//                })
+//                .addData("R", new Func<String>() {
+//                    @Override
+//                    public String value() {
+//                        return formatAngle(t_angles.angleUnit, t_angles.secondAngle);
+//                    }
+//                })
+//                .addData("P", new Func<String>() {
+//                    @Override
+//                    public String value() {
+//                        return formatAngle(t_angles.angleUnit, t_angles.thirdAngle);
+//                    }
+//                })
+//                .addData("Acc", new Func<String>() {
+//                    @Override
+//                    public String value() {
+//                        return String.format("(%.1f, %.1f, %.1f)", t_linearAcceleration.xAccel, t_linearAcceleration.yAccel, t_linearAcceleration.zAccel);
+//                    }
+//                });
 
         // These can be added when/if we do accel integration
 //            line.addData("P: ", new Func<String>() {
