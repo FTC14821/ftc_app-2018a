@@ -9,46 +9,16 @@ abstract class TeleOpMode extends BaseLinearOpMode {
     @Override
     public void teamInit() {
         telemetry.addLine("GP1:")
-                .addData("B", new Func<String>() {
+                .addData("", new Func<String>() {
                     @Override public String value() {
-                        return String.format("ABXY=%s%s%s%s", bool2tf(gamepad1.a), bool2tf(gamepad1.b), bool2tf(gamepad1.x), bool2tf(gamepad1.y));
-                    }})
-                .addData("D", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("LUDR=%s%s%s%s", bool2tf(gamepad1.dpad_left), bool2tf(gamepad1.dpad_up), bool2tf(gamepad1.dpad_down), bool2tf(gamepad1.dpad_right));
-                    }})
-                .addData("LJS", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad1.left_stick_x, gamepad1.left_stick_y);
-                    }})
-                .addData("LTrig/Bump", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("%.2f/%s", gamepad1.left_trigger, bool2tf(gamepad1.left_bumper));
-                    }})
-                ;
+                        return saveTelemetryData("GP1", gamepad1.toString());
+                    }});
 
         telemetry.addLine("GP2:")
-                .addData("B", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("ABXY=%s%s%s%s", bool2tf(gamepad2.a), bool2tf(gamepad2.b), bool2tf(gamepad2.x), bool2tf(gamepad2.y));
-                    }})
-                .addData("D", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("LUDR=%s%s%s%s", bool2tf(gamepad2.dpad_left), bool2tf(gamepad2.dpad_up), bool2tf(gamepad2.dpad_down), bool2tf(gamepad2.dpad_right));
-                    }})
-                .addData("LJS", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("(%.2f, %.2f)", gamepad2.left_stick_x, gamepad2.left_stick_y);
-                    }})
-                .addData("LTrig/Bump", new Func<String>() {
-                    @Override public String value() {
-                        return String.format("%.2f/%s", gamepad2.left_trigger, bool2tf(gamepad2.left_bumper));
-                    }})
-        ;
-    }
-
-    private String bool2tf(boolean b) {
-        return b ? "t" : "f";
+                .addData("", new Func<String>() {
+                        @Override public String value() {
+                            return saveTelemetryData("GP2", gamepad1.toString());
+                        }});
     }
 
 
