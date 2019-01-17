@@ -46,6 +46,15 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
     // Called over and over until stop button is pressed
     public void teleOpLoop() {
+        if(gamepad2.left_bumper)
+            robot.leftDuctTape.setPosition(20 + robot.leftDuctTape.getPosition());
+        if(gamepad2.right_bumper)
+            robot.rightDuctTape.setPosition(20 - robot.rightDuctTape.getPosition());
+        if(gamepad2.left_trigger > 0)
+            robot.boxTiltServo.setPosition(5 + robot.boxTiltServo.getPosition());
+        if(gamepad2.right_trigger > 0)
+            robot.armTiltServo.setPosition(5 + robot.armTiltServo.getPosition());
+
         if (gamepad1.a)
             gamepad2Action.startImmediateChildAction("GAMEPAD1 ALERT", null);
 
@@ -120,16 +129,6 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.left_bumper)
             {}
         }
-
-        if(gamepad2.right_bumper)
-        {
-            robot.hookUp(gamepad2Action, hookPower, false);
-
-            //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning(gamepad2Action) && gamepad2.right_bumper)
-            {}
-        }
-
 
         /*
         if(gamepad1.dpad_up)

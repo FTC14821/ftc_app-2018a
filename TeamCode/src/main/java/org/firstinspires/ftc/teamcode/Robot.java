@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Func;
@@ -34,6 +35,11 @@ public class Robot
     final DcMotor armExtensionMotor;
     final DcMotor hookMotor;
     final DcMotor swingMotor;
+
+    final Servo armTiltServo;
+    final Servo boxTiltServo;
+    final Servo leftDuctTape;
+    final Servo rightDuctTape;
 
     boolean allSafetysAreDisabled = false;
     boolean hookSafetyIsDisabled = false;
@@ -85,6 +91,14 @@ public class Robot
         M1 = hardwareMap.dcMotor.get("M1");
         M1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         M1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        armTiltServo = hardwareMap.servo.get("ArmTiltServo");
+
+        boxTiltServo = hardwareMap.servo.get("BoxTiltServo");
+
+        leftDuctTape = hardwareMap.servo.get("LeftDuctTape");
+
+        rightDuctTape = hardwareMap.servo.get("RightDuctTape");
 
         hookMotor = hardwareMap.dcMotor.get("HookMotor");
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
@@ -176,6 +190,16 @@ public class Robot
                                 getRightMotor().getCurrentPosition(),
                                 getRightMotor().getTargetPosition(),
                                 getRightMotor() == M0 ? "M0" : "M1");
+                    }});
+        telemetry.addLine("ArmServo: ")
+                .addData("", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return opMode.saveTelemetryData("ArmServos", "|ArmTilt=%.1f|BoxTilt=+%.1f|LeftDuctTape=%+.1f|RightDuctTape=%+.1f|%s",
+                                armTiltServo.getPosition(),
+                                boxTiltServo.getPosition(),
+                                leftDuctTape.getPosition(),
+                                rightDuctTape.getPosition());
                     }});
 
         telemetry.addLine("Hook: ")

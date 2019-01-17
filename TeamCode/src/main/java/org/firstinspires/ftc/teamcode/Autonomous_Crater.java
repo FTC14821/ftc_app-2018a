@@ -35,7 +35,11 @@ public class Autonomous_Crater extends AutonomousOpMode
             return 0;
         if(robotVision.objectColorStringFromLeftToRight .equals("SG"))
             return 1;
+        if(robotVision.objectColorStringFromLeftToRight .equals("SSS"))
+            return 2;
         if(robotVision.objectColorStringFromLeftToRight .equals("SS"))
+            return 2;
+        if(robotVision.objectColorStringFromLeftToRight .equals("S"))
             return 2;
         else
             return 0;

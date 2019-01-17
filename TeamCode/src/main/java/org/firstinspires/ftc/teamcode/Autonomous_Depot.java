@@ -35,7 +35,11 @@ public class Autonomous_Depot extends AutonomousOpMode
             return 0;
         if(robotVision.objectColorStringFromLeftToRight .equals("SG"))
             return 1;
+        if(robotVision.objectColorStringFromLeftToRight .equals("SSS"))
+            return 2;
         if(robotVision.objectColorStringFromLeftToRight .equals("SS"))
+            return 2;
+        if(robotVision.objectColorStringFromLeftToRight .equals("S"))
             return 2;
         else
             return 0;
@@ -80,13 +84,14 @@ public class Autonomous_Depot extends AutonomousOpMode
     private void boopLeftMineral(ActionTracker callingAction, double movingSpeed)
     {
         ActionTracker action = callingAction.startChildAction("LeftMineral", null);
+        action.setStatus("Moving away from lander");
         robot.inchmove(opmodeAction, 2, movingSpeed);
-        action.setStatus("Heading towards mineral");
-        robot.turnLeft(opmodeAction, 30);
-        robot.inchmove(opmodeAction, 28, 0.75);
-        action.setStatus("Turning to crater");
-        robot.turnRight(opmodeAction, 30);
-        robot.inchmove(opmodeAction, 5, 0.5);
+        action.setStatus("Turning and moving towards mineral");
+        robot.turnLeft(opmodeAction, 40);
+        robot.inchmove(opmodeAction, 40, 0.6);
+        robot.turnLeft(opmodeAction, 100);
+        robot.inchmoveBack(opmodeAction, 12, movingSpeed);
+        robot.setSwingArmPower(opmodeAction, 1);
 
         action.finish();
     }
