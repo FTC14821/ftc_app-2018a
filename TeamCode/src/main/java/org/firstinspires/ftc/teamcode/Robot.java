@@ -31,6 +31,40 @@ public class Robot
     public static final double ARM_TILT_SERVO_MIN_LOCATION = 0.04;
     public static final double ARM_TILT_SERVO_MAX_LOCATION = 0.75;
 
+    public static final int ARM_SWING_DOWN_IN_FRONT = 0;
+    public static final int ARM_SWING_DOWN_IN_BACK = 10000;
+    public static final int ARM_SWING_UP = 5000;
+    public static final int ARM_EXTENTION_IN = 0;
+    public static final int ARM_EXTENTION_OUT = MAX_ARM_EXTENSION_DISTANCE;
+    public static final double ARM_SPIN_FOLDED_IN = 0;
+    public static final double ARM_SPIN_STRAIGHT = .56;
+    public static final double ARM_SPIN_TILTED = .46;
+
+    public static enum ARM_LOCATION {
+        FOLDED(ARM_SWING_DOWN_IN_FRONT,ARM_SPIN_FOLDED_IN, ARM_EXTENTION_IN, 0),
+        CRATER(ARM_SWING_DOWN_IN_BACK, ARM_SPIN_STRAIGHT, ARM_EXTENTION_OUT, 0),
+        DUMP_GOLD(ARM_SWING_UP, ARM_SPIN_STRAIGHT, ARM_EXTENTION_OUT, 0),
+        DUMP_GOLD(ARM_SWING_UP, ARM_SPIN_TILTED, ARM_EXTENTION_OUT, 0);
+
+        int armSwingMotorLocation;
+        double armSpinServoLocation;
+        int armExtensionMotorLocation;
+        double boxTiltServoLocation;
+
+        public ARM_LOCATION(int armSwingMotorLocation,
+                            double armSpinServoLocation,
+                            int armExtensionMotorLocation,
+                            double boxTiltServoLocation)
+        {
+            this.armSwingMotorLocation=armSwingMotorLocation;
+            this.armSpinServoLocation=armSpinServoLocation;
+            this.armExtensionMotorLocation = armExtensionMotorLocation;
+            this.boxTiltServoLocation=boxTiltServoLocation;
+        }
+    }
+
+    ARM_LOCATION currentArmLocation = ARM_LOCATION.FOLDED;
+
     final Telemetry telemetry;
     final HardwareMap hardwareMap;
     final BaseLinearOpMode opMode;
@@ -632,11 +666,7 @@ public class Robot
         ActionTracker action = callingAction.startChildAction("RobotHealthCheck", null);
         if(opMode instanceof TeleOpMode)
         {
-            if (Math.abs(previousArmSwingPower) >= 0.25 && Math.abs(armSwingSpeed) < 10)
-            {
-                action.setStatus("EMERGENCY ARM SWING STOP: Power was %.2f, speed was %d", previousArmSwingPower, armSwingSpeed);
-                setSwingArmSpeed(action,0);
-            }
+
             if (Math.abs(previousHookPower) >= 0.25 && Math.abs(hookSpeed) < 10)
             {
                 action.setStatus("EMERGENCY HOOK STOP: Power was %.2f, speed was %d", previousHookPower, hookSpeed);
@@ -660,12 +690,6 @@ public class Robot
         {
             action.setStatus("Stopping hook motor");
             hookMotor.setPower(0);
-        }
-
-        if (!isSwingArmPowerOK((swingMotor.getPower())))
-        {
-            action.setStatus("Stopping armSwing motor");
-            swingMotor.setPower(0);
         }
 
         action.finish();
@@ -1346,5 +1370,13 @@ public class Robot
         getRightMotor().setMode(originalRightMode);
 
         action.finish();
+    }
+
+    public void setArmPostitions(ARM_LOCATION desired location)
+    {
+        if(currentArmLocation == ARM_LOCATION.FOLDED){
+            setArmTiltServerPosition(ARM_SPIN_STRAIGHT);
+        }
+        setSw
     }
 }
