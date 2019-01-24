@@ -91,7 +91,7 @@ public class Autonomous_Depot extends AutonomousOpMode
         robot.inchmove(opmodeAction, 40, 0.6);
         robot.turnLeft(opmodeAction, 100);
         robot.inchmoveBack(opmodeAction, 12, movingSpeed);
-        robot.setSwingArmPower(opmodeAction, 1);
+        robot.setSwingArmSpeed(opmodeAction, 1);
 
         action.finish();
     }
@@ -104,7 +104,7 @@ public class Autonomous_Depot extends AutonomousOpMode
         robot.inchmove(opmodeAction, 42, 0.75);
         robot.turnRight(opmodeAction, 180);
         robot.inchmove(opmodeAction, 5, movingSpeed);
-        robot.setSwingArmPower(opmodeAction, 1);
+        robot.setSwingArmSpeed(opmodeAction, 1);
 
         action.finish();
     }
@@ -120,7 +120,7 @@ public class Autonomous_Depot extends AutonomousOpMode
         robot.inchmove(opmodeAction, 40, 0.6);
         robot.turnRight(opmodeAction, 100);
         robot.inchmoveBack(opmodeAction, 12, movingSpeed);
-        robot.setSwingArmPower(opmodeAction, 1);
+        robot.setSwingArmSpeed(opmodeAction, 1);
 
         action.finish();
     }

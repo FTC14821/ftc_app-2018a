@@ -27,6 +27,10 @@ public class Robot
     public final int MAX_SWING_ARM_DISTANCE = 2200;
     public final int MAX_ARM_EXTENSION_DISTANCE = 12800;
 
+
+    public static final double ARM_TILT_SERVO_MIN_LOCATION = 0.04;
+    public static final double ARM_TILT_SERVO_MAX_LOCATION = 0.75;
+
     final Telemetry telemetry;
     final HardwareMap hardwareMap;
     final BaseLinearOpMode opMode;
@@ -36,10 +40,10 @@ public class Robot
     final DcMotor hookMotor;
     final DcMotor swingMotor;
 
-    final Servo armTiltServo;
+    final Servo armSpinServo;
     final Servo boxTiltServo;
-    final Servo leftDuctTape;
-    final Servo rightDuctTape;
+    final Servo leftBoxServo;
+    final Servo rightBoxServo;
 
     boolean allSafetysAreDisabled = false;
     boolean hookSafetyIsDisabled = false;
@@ -92,21 +96,24 @@ public class Robot
         M1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         M1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        armTiltServo = hardwareMap.servo.get("ArmTiltServo");
+        armSpinServo = hardwareMap.servo.get("ArmSpinServo");
 
         boxTiltServo = hardwareMap.servo.get("BoxTiltServo");
 
-        leftDuctTape = hardwareMap.servo.get("LeftDuctTape");
+        leftBoxServo = hardwareMap.servo.get("LeftBoxServo");
 
-        rightDuctTape = hardwareMap.servo.get("RightDuctTape");
+        rightBoxServo = hardwareMap.servo.get("RightBoxServo");
 
-        hookMotor = hardwareMap.dcMotor.get("HookMotor");
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
         armExtensionMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        hookMotor = hardwareMap.dcMotor.get("HookMotor");
         hookMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         swingMotor = hardwareMap.dcMotor.get("SwingMotor");
         swingMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         swingMotor.setDirection(DcMotor.Direction.REVERSE);
+        swingMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         teamImu = new TeamImu().initialize(action, hardwareMap, telemetry);
 
@@ -132,6 +139,7 @@ public class Robot
 
         setRobotOrientation(action, true);
         stop(action, true);
+        setArmTiltServerPosition(ARM_TILT_SERVO_MIN_LOCATION);
 
         setupRobotTelemetry(telemetry);
 
@@ -195,11 +203,11 @@ public class Robot
                 .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return opMode.saveTelemetryData("ArmServos", "|ArmTilt=%.1f|BoxTilt=+%.1f|LeftDuctTape=%+.1f|RightDuctTape=%+.1f|%s",
-                                armTiltServo.getPosition(),
+                        return opMode.saveTelemetryData("ArmServos", "|ArmTilt=%.2f|BoxTilt=+%.2f|LeftIntakeServo=%+.1f|RightIntakeServo=%+.1f|",
+                                armSpinServo.getPosition(),
                                 boxTiltServo.getPosition(),
-                                leftDuctTape.getPosition(),
-                                rightDuctTape.getPosition());
+                                leftBoxServo.getPosition(),
+                                rightBoxServo.getPosition());
                     }});
 
         telemetry.addLine("Hook: ")
@@ -313,6 +321,17 @@ public class Robot
             return M1;
     }
 
+    public void setArmTiltServerPosition(double position)
+    {
+        if (position < ARM_TILT_SERVO_MIN_LOCATION)
+            position = ARM_TILT_SERVO_MIN_LOCATION;
+        if (position > ARM_TILT_SERVO_MAX_LOCATION)
+            position = ARM_TILT_SERVO_MAX_LOCATION;
+
+        armSpinServo.setPosition(position);
+    }
+
+
     public int getWheelPosition() {
         return M0.getCurrentPosition();
     }
@@ -361,7 +380,14 @@ public class Robot
         }
     }
 
-    public void setSwingArmPower(ActionTracker callingAction, double power)
+    public void setSwingArmSpeed(ActionTracker callingAction, double speed)
+    {
+        if(powersAreDifferent(armExtensionMotor.getPower(), speed))
+            callingAction.startImmediateChildAction("setArmSwingSpeed", "setArmSwingSpeed(%.2f)", speed);
+        swingMotor.setPower(speed);
+    }
+
+    public void setSwingArmPower_Old(ActionTracker callingAction, double power)
     {
         if ( power == 0 && armExtensionMotor.getPower() == 0 )
             return;
@@ -375,7 +401,7 @@ public class Robot
             return;
         }
 
-        if (!isSwingArmPowerOK(power))
+        if(!isSwingArmPowerOK(power))
         {
             action.finish("Power not okay");
             return;
@@ -609,7 +635,7 @@ public class Robot
             if (Math.abs(previousArmSwingPower) >= 0.25 && Math.abs(armSwingSpeed) < 10)
             {
                 action.setStatus("EMERGENCY ARM SWING STOP: Power was %.2f, speed was %d", previousArmSwingPower, armSwingSpeed);
-                setSwingArmPower(action,0);
+                setSwingArmSpeed(action,0);
             }
             if (Math.abs(previousHookPower) >= 0.25 && Math.abs(hookSpeed) < 10)
             {
@@ -1214,7 +1240,7 @@ public class Robot
             action.setStatus("Position=%d, change=%d", newValue, change);
             // If it isn't getting more negative
             if (change > -5) {
-                setSwingArmPower(action, 0);
+                setSwingArmSpeed(action, 0);
                 break;
             }
         }

@@ -3,12 +3,12 @@ package org.firstinspires.ftc.teamcode;
 import org.firstinspires.ftc.robotcore.external.Func;
 
 abstract class TeleOpMode extends BaseLinearOpMode {
-
     ActionTracker gamepad1Action, gamepad2Action;
     AbstractOngoingAction armResetAction = null;
 
     @Override
-    public void teamInit() {
+    public void teamInit()
+    {
         gamepad1Action = opmodeAction.startChildAction("GamePad1", null);
         gamepad2Action = opmodeAction.startChildAction("GamePad2", null);
 
@@ -45,20 +45,24 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
 
     // Called over and over until stop button is pressed
-    public void teleOpLoop() {
+    public void teleOpLoop()
+    {
         if(gamepad2.left_bumper)
-            robot.leftDuctTape.setPosition(20 + robot.leftDuctTape.getPosition());
-        if(gamepad2.right_bumper)
-            robot.rightDuctTape.setPosition(20 - robot.rightDuctTape.getPosition());
-        if(gamepad2.left_trigger > 0)
-            robot.boxTiltServo.setPosition(5 + robot.boxTiltServo.getPosition());
-        if(gamepad2.right_trigger > 0)
-            robot.armTiltServo.setPosition(5 + robot.armTiltServo.getPosition());
+            robot.leftBoxServo.setPosition(20 + robot.leftBoxServo.getPosition());
 
-        if (gamepad1.a)
+        if(gamepad2.right_bumper)
+            robot.rightBoxServo.setPosition(20 - robot.rightBoxServo.getPosition());
+
+        if(gamepad2.left_trigger > 0)
+            robot.setArmTiltServerPosition(robot.armSpinServo.getPosition() - .01);
+
+        if(gamepad2.right_trigger > 0)
+            robot.setArmTiltServerPosition(robot.armSpinServo.getPosition() + .01);
+
+        if(gamepad1.a)
             gamepad2Action.startImmediateChildAction("GAMEPAD1 ALERT", null);
 
-        if (gamepad2.a)
+        if(gamepad2.a)
             gamepad2Action.startImmediateChildAction("GAMEPAD2 ALERT", null);
 
         if(gamepad2.x)
@@ -88,19 +92,19 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             armResetAction = robot.startArmReset(gamepad2Action);
         }
 
-        if ( armResetAction != null && armResetAction.isDone() )
+        if(armResetAction != null && armResetAction.isDone() )
             armResetAction = null;
 
 
         // Control Arm if arm-reset is not happening
         if(armResetAction == null)
         {
-            if (gamepad2.right_bumper)
+            if(gamepad2.right_bumper)
                 robot.setArmExtensionPower(gamepad2Action, -gamepad2.left_stick_y / 4);
             else
                 robot.setArmExtensionPower(gamepad2Action, -gamepad2.left_stick_y);
 
-            robot.setSwingArmPower(gamepad2Action, -gamepad2.right_stick_y);
+            robot.setSwingArmSpeed(gamepad2Action, -gamepad2.right_stick_y / 2);
         }
 
 

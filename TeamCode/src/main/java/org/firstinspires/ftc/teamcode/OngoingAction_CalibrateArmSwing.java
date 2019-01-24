@@ -23,7 +23,7 @@ public class OngoingAction_CalibrateArmSwing extends AbstractOngoingAction
     @Override
     public void cleanup()
     {
-        robot.setSwingArmPower(actionTracker, 0);
+        robot.setSwingArmSpeed(actionTracker, 0);
         robot.armSwingSafetyIsDisabled = false;
 
         super.cleanup();

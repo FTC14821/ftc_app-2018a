@@ -18,14 +18,14 @@ public class OngoingAction_ArmReset extends AbstractOngoingAction
     {
         if ( robot.getArmSwingZone() == 3 )
         {
-            robot.setSwingArmPower(actionTracker,-1);
+            robot.setSwingArmSpeed(actionTracker,-1);
         }
         else
         {
             if ( robot.armExtensionMotor.getPower() == 0 )
-                robot.setSwingArmPower(actionTracker, -0.3);
+                robot.setSwingArmSpeed(actionTracker, -0.3);
             else
-                robot.setSwingArmPower(actionTracker, 0);
+                robot.setSwingArmSpeed(actionTracker, 0);
         }
     }
 
