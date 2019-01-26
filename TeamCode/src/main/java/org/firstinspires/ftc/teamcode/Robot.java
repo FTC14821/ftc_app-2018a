@@ -32,8 +32,8 @@ public class Robot
     public static final double ARM_TILT_SERVO_MAX_LOCATION = 0.75;
 
     public static final int ARM_SWING_DOWN_IN_FRONT = 0;
-    public static final int ARM_SWING_DOWN_IN_BACK = 10000;
-    public static final int ARM_SWING_UP = 5000;
+    public static final int ARM_SWING_DOWN_IN_BACK = -7777;
+    public static final int ARM_SWING_UP = -4324;
     public static final int ARM_EXTENTION_IN = 0;
     public static final int ARM_EXTENTION_OUT = MAX_ARM_EXTENSION_DISTANCE;
     public static final double ARM_SPIN_FOLDED_IN = 0;

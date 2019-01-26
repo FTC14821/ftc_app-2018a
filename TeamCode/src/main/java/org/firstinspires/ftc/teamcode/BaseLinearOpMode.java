@@ -23,12 +23,13 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
     // Used to log telemetry to RobotLog (in addition to driver station)
     Map<String, String> latestTelemetryData = new LinkedHashMap<>();
     long lastTelemetryLoggingTime_ms = 0;
-    long lastTelemetryUpdateTime_ms=0;
+    long lastTelemetryUpdateTime_ms = 0;
 
     // Used to measure how long between idle loops
     long lastIdleStartTime_ms = 0;
     double lastLoopDuration_secs = 0;
     private static final long LOOP_TIME_MOVING_AVERAGE_MS = 1000L;
+    Scheduler scheduler = Scheduler.get();
 
     // Keep recent loop intervals
     // How fast are we calling teamIdle... ObservationTime (ms time) --> Idle-Time_interval (ms)
@@ -124,6 +125,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode {
         if(robot != null)
             robot.loop(callingAction);
 
+        scheduler.loop();
         telemetry.update();
 
         long t = System.currentTimeMillis();
