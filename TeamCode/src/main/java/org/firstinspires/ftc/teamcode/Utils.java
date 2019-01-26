@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import java.awt.*;
+import static org.firstinspires.ftc.teamcode.Utils.*;
 import java.util.Date;
 
 public class Utils {
@@ -15,8 +15,9 @@ public class Utils {
         }
     }
     public static void log(String format, Object... args){
-        System.err.println(safeStringFormat("%s %s", new Date(), safeStringFormat(format, args)));
+        System.err.println(safeStringFormat("%s 14821 %s", new Date(), safeStringFormat(format, args)));
     }
+
     public static void sleep(long time_ms){
         try {
             Thread.sleep(time_ms);

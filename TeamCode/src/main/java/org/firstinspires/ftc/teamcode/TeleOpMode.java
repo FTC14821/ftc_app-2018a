@@ -54,10 +54,10 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             robot.rightBoxServo.setPosition(20 - robot.rightBoxServo.getPosition());
 
         if(gamepad2.left_trigger > 0)
-            robot.setArmTiltServerPosition(robot.armSpinServo.getPosition() - .01);
+            robot.setArmTiltServerPosition(robot.armSpinServo.getPosition() - Robot.MAX_ARM_SPIN_SERVO_CHANGE);
 
         if(gamepad2.right_trigger > 0)
-            robot.setArmTiltServerPosition(robot.armSpinServo.getPosition() + .01);
+            robot.setArmTiltServerPosition(robot.armSpinServo.getPosition() + Robot.MAX_ARM_SPIN_SERVO_CHANGE);
 
         if(gamepad1.a)
             gamepad2Action.startImmediateChildAction("GAMEPAD1 ALERT", null);
@@ -72,7 +72,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
         if(gamepad2.y)
         {
-            robot.calibrateEverything(gamepad2Action);
+            new OngoingAction_CalibrateArmSwing();
 
             while(shouldOpModeKeepRunning(gamepad2Action) && gamepad2.y)
             {}
@@ -131,6 +131,14 @@ abstract class TeleOpMode extends BaseLinearOpMode {
 
             //Wait until button is released before switching front and back
             while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.left_bumper)
+            {}
+        }
+
+        if(gamepad2.a)
+        {
+            new MoveArmToPositionAction(10000, Robot.ARM_SWING_UP);
+
+            while(shouldOpModeKeepRunning(gamepad2Action) && gamepad2.a)
             {}
         }
 

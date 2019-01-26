@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.rev.RevTouchSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Func;
@@ -23,12 +25,12 @@ public class Robot
     public static final double TURN_SLOWDOWN_POWER = 0.05;
     public static final int TURN_SLOWDOWN_DEGREES = 10;
     // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
-    public final int MAX_HOOK_DISTANCE = 27500;
-    public final int MAX_SWING_ARM_DISTANCE = 2200;
-    public final int MAX_ARM_EXTENSION_DISTANCE = 12800;
+    public static final int MAX_HOOK_DISTANCE = 27500;
+    public static final int MAX_SWING_ARM_DISTANCE = 2200;
+    public static final int MAX_ARM_EXTENSION_DISTANCE = 12800;
 
 
-    public static final double ARM_TILT_SERVO_MIN_LOCATION = 0.04;
+    public static final double ARM_TILT_SERVO_MIN_LOCATION = 0.01;
     public static final double ARM_TILT_SERVO_MAX_LOCATION = 0.75;
 
     public static final int ARM_SWING_DOWN_IN_FRONT = 0;
@@ -39,19 +41,20 @@ public class Robot
     public static final double ARM_SPIN_FOLDED_IN = 0;
     public static final double ARM_SPIN_STRAIGHT = .56;
     public static final double ARM_SPIN_TILTED = .46;
+    public static final double MAX_ARM_SPIN_SERVO_CHANGE = 0.05;
 
     public static enum ARM_LOCATION {
         FOLDED(ARM_SWING_DOWN_IN_FRONT,ARM_SPIN_FOLDED_IN, ARM_EXTENTION_IN, 0),
         CRATER(ARM_SWING_DOWN_IN_BACK, ARM_SPIN_STRAIGHT, ARM_EXTENTION_OUT, 0),
         DUMP_GOLD(ARM_SWING_UP, ARM_SPIN_STRAIGHT, ARM_EXTENTION_OUT, 0),
-        DUMP_GOLD(ARM_SWING_UP, ARM_SPIN_TILTED, ARM_EXTENTION_OUT, 0);
+        DUMP_SILVER(ARM_SWING_UP, ARM_SPIN_TILTED, ARM_EXTENTION_OUT, 0);
 
         int armSwingMotorLocation;
         double armSpinServoLocation;
         int armExtensionMotorLocation;
         double boxTiltServoLocation;
 
-        public ARM_LOCATION(int armSwingMotorLocation,
+        ARM_LOCATION(int armSwingMotorLocation,
                             double armSpinServoLocation,
                             int armExtensionMotorLocation,
                             double boxTiltServoLocation)
@@ -79,10 +82,15 @@ public class Robot
     final Servo leftBoxServo;
     final Servo rightBoxServo;
 
+    final TouchSensor armSwingFrontLimit;
+    final TouchSensor limitSwitch1;
+
     boolean allSafetysAreDisabled = false;
     boolean hookSafetyIsDisabled = false;
     boolean armSwingSafetyIsDisabled = false;
     boolean armExtensionSafetyIsDisabled = false;
+
+
 
     boolean motorsInFront = true;
 
@@ -112,8 +120,16 @@ public class Robot
     // When to start stopping turns
     public static final double TURN_APPROXIMATION = 3;
 
+    private static Robot sharedInstance;
+
+    public static Robot get()
+    {
+        return sharedInstance;
+    }
+
     public Robot(ActionTracker callingAction, BaseLinearOpMode baseLinearOpMode, HardwareMap hardwareMap, Telemetry telemetry)
     {
+        sharedInstance = this;
         ActionTracker action = callingAction.startChildAction("RobotConstruction", null);
 
         action.setStatus("Gathering hardware information");
@@ -131,12 +147,12 @@ public class Robot
         M1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         armSpinServo = hardwareMap.servo.get("ArmSpinServo");
-
         boxTiltServo = hardwareMap.servo.get("BoxTiltServo");
-
         leftBoxServo = hardwareMap.servo.get("LeftBoxServo");
-
         rightBoxServo = hardwareMap.servo.get("RightBoxServo");
+
+        armSwingFrontLimit = hardwareMap.touchSensor.get("ArmSwingFrontLimit");
+        limitSwitch1 = hardwareMap.touchSensor.get("LimitSwitch1");
 
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
         armExtensionMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -210,6 +226,15 @@ public class Robot
                                 correctHeading,
                                 getHeadingError());
                     }});
+
+        telemetry.addLine("Touch Sensors: ")
+                .addData("", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return opMode.saveTelemetryData("Touch sensors","|ArmSwingLimit %s|",
+                                armSwingFrontLimit.isPressed() ? "Pressed" : "Not Pressed"); }
+
+                });
 
         telemetry.addLine("Left: ")
                 .addData("", new Func<String>() {
@@ -362,7 +387,7 @@ public class Robot
         if (position > ARM_TILT_SERVO_MAX_LOCATION)
             position = ARM_TILT_SERVO_MAX_LOCATION;
 
-        armSpinServo.setPosition(position);
+       new MoveArmSpinToPositionAction(position);
     }
 
 
@@ -1372,11 +1397,11 @@ public class Robot
         action.finish();
     }
 
-    public void setArmPostitions(ARM_LOCATION desired location)
+    public void setArmPostitions(ARM_LOCATION desiredLocation)
     {
         if(currentArmLocation == ARM_LOCATION.FOLDED){
             setArmTiltServerPosition(ARM_SPIN_STRAIGHT);
         }
-        setSw
+        // TODO: Start an EndableAction to move the arm.
     }
 }

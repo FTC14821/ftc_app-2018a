@@ -1,40 +1,26 @@
 package org.firstinspires.ftc.teamcode;
 
-public class OngoingAction_CalibrateArmSwing extends AbstractOngoingAction
+public class OngoingAction_CalibrateArmSwing extends EndableAction
 {
-    public OngoingAction_CalibrateArmSwing(ActionTracker callingActionTracker, Robot robot)
+    public OngoingAction_CalibrateArmSwing()
     {
-        super(callingActionTracker, robot, "CalibrateArmSwing" , null);
+        super(10000, "CalibraterArmSwing", "CalibrateArmSwing");
+        Robot.get().swingMotor.setPower(0.25);
     }
 
     @Override
-    public void start()
+    public boolean loop()
     {
-        robot.armSwingSafetyIsDisabled = true;
-        robot.setSwingArmPower_raw(null, -0.3, 1, "DirectArmSwingControl-Calibration");
-    }
-
-    @Override
-    public void loop()
-    {
-
-    }
-
-    @Override
-    public void cleanup()
-    {
-        robot.setSwingArmSpeed(actionTracker, 0);
-        robot.armSwingSafetyIsDisabled = false;
-
-        super.cleanup();
-    }
-
-    @Override
-    public boolean isDone()
-    {
-        if(robot.armSwingSpeed < 10)
+        if ( Robot.get().armSwingFrontLimit.isPressed())
             return true;
         else
             return false;
+    }
+
+    @Override
+    public void done()
+    {
+        super.done();
+        Robot.get().swingMotor.setPower(0.0);
     }
 }

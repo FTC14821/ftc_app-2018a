@@ -35,7 +35,7 @@ public class OngoingAction_CalibrateArmExtensionAndSwing extends AbstractOngoing
         if(robot.armExtensionSpeed < 10)
         {
             // Once arm extension is retracted, calibrate the arm swing
-            robot.startOngoingAction(new OngoingAction_CalibrateArmSwing(actionTracker, robot));
+            //robot.startOngoingAction(new OngoingAction_CalibrateArmSwing(actionTracker, robot));
             return true;
         }
         else

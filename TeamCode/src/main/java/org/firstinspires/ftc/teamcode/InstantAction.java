@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import static util.Utils.*;
+import static org.firstinspires.ftc.teamcode.Utils.*;
 
 public class InstantAction extends Action{
     public InstantAction(String label, String descriptionFormat, Object...descriptionArgs){

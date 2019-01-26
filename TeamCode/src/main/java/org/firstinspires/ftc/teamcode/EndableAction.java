@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import static util.Utils.*;
+import static org.firstinspires.ftc.teamcode.Utils.*;
 
 public abstract class EndableAction extends OngoingAction{
     private final long timeLimit_ms;
