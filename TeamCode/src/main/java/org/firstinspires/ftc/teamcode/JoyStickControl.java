@@ -9,7 +9,6 @@ import static java.lang.Math.abs;
 @Disabled
 public class JoyStickControl extends TeleOpMode
 {
-
     @Override
     public void teleOpLoop() {
         super.teleOpLoop();
@@ -26,22 +25,22 @@ public class JoyStickControl extends TeleOpMode
         //Joystick Control
         if ( power == 0 && steering == 0 )
         {
-            robot.stop(gamepad1Action, false);
+            robot.stopWithoutBraking();
         }
         else if(abs(power) < 0.1)
         {
             // Low power: Spin (opposite power to wheels)
 
             // left_stick_x: negative to left which matches robot.spin
-            robot.spin(gamepad1Action, steering);
+            robot.spin(steering);
         }
         else if (steering == 0 )
         {
-            robot.driveStraight(gamepad1Action, power);
+            robot.driveStraight(power);
         }
         else
         {
-            robot.setPowerSteering(gamepad1Action, power, steering);
+            robot.setPowerSteering(power, steering);
         }
     }
 }

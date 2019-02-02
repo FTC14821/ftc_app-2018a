@@ -7,12 +7,12 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 public class Autonomous_Square extends AutonomousOpMode
 {
         @Override
-        void teamRun()
+        public void teamRun()
         {
-                while(true)
+                while(shouldOpModeKeepRunning())
                 {
-                        robot.inchmove(opmodeAction,  10, 0.5);
-                        robot.turnLeft(opmodeAction, 90);
+                        robot.startInchMove(10, 0.5);
+                        robot.startTurningLeft(90);
                 }
         }
 }

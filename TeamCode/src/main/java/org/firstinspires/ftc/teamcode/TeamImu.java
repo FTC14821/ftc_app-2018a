@@ -12,6 +12,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+import org.firstinspires.ftc.teamcode.scheduler.OngoingAction;
+import org.firstinspires.ftc.teamcode.scheduler.RepeatedAction;
 
 import java.util.Locale;
 
@@ -29,12 +31,12 @@ public class TeamImu  {
     Acceleration accelrationDrift;
 
     // Degrees turned to the right are negative
-    double totalDegreesTurned = 0;
-    double lastHeading = 0;
+    double totalDegreesTurned;
+    double lastHeading;
 
 
 
-    public TeamImu initialize(ActionTracker action, HardwareMap hardwareMap, Telemetry telemetry) {
+    public TeamImu(HardwareMap hardwareMap, Telemetry telemetry) {
         this.parameters = parameters;
         // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
         // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
@@ -55,14 +57,21 @@ public class TeamImu  {
         imu.initialize(parameters);
 
         lastHeading = getHeading();
+        totalDegreesTurned = lastHeading;
 
         // Set up our telemetry dashboard
         // setupTelemetry(telemetry);
 
-        return this;
+        new RepeatedAction("IMUWatcher", null) {
+            @Override
+            public void doTask()
+            {
+                processImuUpdates();
+            }
+        }.start();
     }
 
-    public void loop(ActionTracker action)
+    void processImuUpdates()
     {
         // Accumulate degrees turned
         double currentHeading = getHeading();

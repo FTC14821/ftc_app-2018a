@@ -2,32 +2,38 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.scheduler.Action;
+import org.firstinspires.ftc.teamcode.scheduler.ImmediateAction;
+
 @TeleOp(name = "A: Land-Depot", group = "Autonomous")
 
 public class Autonomous_Depot extends AutonomousOpMode
 {
+    private static final double MOVING_SPEED = 0.8;
+
     @Override
     void teamInit()
     {
         super.teamInit();
 
-        robot.getRobotVision(opmodeAction).activate(opmodeAction);
+        robot.getRobotVision().activate();
 
-        robot.calibrateEverything(opmodeAction);
+        robot.startCalibratingEverything();
     }
 
-    int getGoldLocation()
+    int getGoldLocation(long timeout_ms, int resultIfTimeout)
     {
-        ActionTracker action = opmodeAction.startChildAction("GetGoldLocation", null);
+        Action action = new ImmediateAction("GetGoldLocation");
 
         long start = System.currentTimeMillis();
-        long endTime = start + 1000;
-        RobotVision robotVision = robot.getRobotVision(action);
+        long endTime = start + timeout_ms;
+        RobotVision robotVision = robot.getRobotVision();
 
-        while(shouldOpModeKeepRunning(action) && robotVision.objectColorsFromLeftToRight.size() != 2 && System.currentTimeMillis() < endTime)
+        while(robotVision.objectColorsFromLeftToRight.size() != 2 && System.currentTimeMillis() < endTime)
         {
             action.setStatus("Seeing %d objects instead of 2: %s",
                     robotVision.objectColorsFromLeftToRight.size(), robotVision.objectColorStringFromLeftToRight );
+            action.actionSleep(1, "Waiting to see if Vision sees correct objects");
         }
         action.finish("Final objects: %s", robotVision.objectColorStringFromLeftToRight);
 
@@ -42,85 +48,87 @@ public class Autonomous_Depot extends AutonomousOpMode
         if(robotVision.objectColorStringFromLeftToRight .equals("S"))
             return 2;
         else
-            return 0;
+        {
+            action.log("Vision timed out, returning default (%d)", resultIfTimeout);
+            return resultIfTimeout;
+        }
     }
 
     @Override
-    void teamRun()
+    public void teamRun()
     {
-        int goldLocation = getGoldLocation();
+        int goldLocation = getGoldLocation(1000, 0);
         opmodeAction.setStatus("Gold location: %d", goldLocation);
 
         boolean debug = false;
-        double movingSpeed = 1;
 
-        robot.resetCorrectHeading(opmodeAction, "Perpendicular to lander");
-        robot.hookUp( opmodeAction, 1, true);
+        robot.resetCorrectHeading("Perpendicular to lander");
+        robot.startMovingHookUp( 1).waitUntilFinished();
         opmodeAction.setStatus("Landed");
 
-        robot.setDrivingPowers(opmodeAction, 0, -1);
-        robot.hookDown(opmodeAction, 1, false);
-        teamSleep(opmodeAction, 1000, "Get unhooked");
-        robot.stop(opmodeAction, false);
+        robot.setDrivingPowers(0, -1);
+        robot.startMovingHookDown(1);
+        teamSleep(1000, "Get unhooked");
+        robot.stopWithoutBraking();
 
-        teamSleep(opmodeAction, 750, "Getting hook out of way");
+        teamSleep(750, "Getting hook out of way");
 
         switch(goldLocation)
         {
             case 2:
-                boopRightMineral(opmodeAction, movingSpeed);
+                boopRightMineral();
                 break;
             case 1:
-                boopMiddleMineral(opmodeAction, movingSpeed);
+                boopMiddleMineral();
                 break;
             default:
-                boopLeftMineral(opmodeAction, movingSpeed);
+                boopLeftMineral();
                 break;
         }
-        robot.stop(opmodeAction, true);
-        robot.hookDown(opmodeAction, 1, true);
+        robot.startStopping().waitUntilFinished();
+        robot.startMovingHookDown(1).waitUntilFinished();
     }
 
-    private void boopLeftMineral(ActionTracker callingAction, double movingSpeed)
+    private void boopLeftMineral()
     {
-        ActionTracker action = callingAction.startChildAction("LeftMineral", null);
+        Action action = new ImmediateAction("LeftMineral");
         action.setStatus("Moving away from lander");
-        robot.inchmove(opmodeAction, 2, movingSpeed);
+        robot.startInchMove(2, MOVING_SPEED).waitUntilFinished();
         action.setStatus("Turning and moving towards mineral");
-        robot.turnLeft(opmodeAction, 40);
-        robot.inchmove(opmodeAction, 40, 0.6);
-        robot.turnLeft(opmodeAction, 100);
-        robot.inchmoveBack(opmodeAction, 12, movingSpeed);
-        robot.setSwingArmSpeed(opmodeAction, 1);
+        robot.startTurningLeft(40).waitUntilFinished();
+        robot.startInchMove(40, 0.6).waitUntilFinished();
+        robot.startTurningLeft(100).waitUntilFinished();
+        robot.startInchMoveBack(12, MOVING_SPEED).waitUntilFinished();
+        robot.setSwingArmSpeed(1);
 
         action.finish();
     }
 
-    private void boopMiddleMineral(ActionTracker callingAction, double movingSpeed)
+    private void boopMiddleMineral()
     {
         // We start 20deg turned right from the lander
-        ActionTracker action = callingAction.startChildAction("middleMineral", null);
+        Action action = new ImmediateAction("middleMineral");
         action.setStatus("Heading towards mineral");
-        robot.inchmove(opmodeAction, 42, 0.75);
-        robot.turnRight(opmodeAction, 180);
-        robot.inchmove(opmodeAction, 5, movingSpeed);
-        robot.setSwingArmSpeed(opmodeAction, 1);
+        robot.startInchMove(42, 0.75).waitUntilFinished();
+        robot.startTurningRight(180).waitUntilFinished();
+        robot.startInchMove(5, MOVING_SPEED).waitUntilFinished();
+        robot.setSwingArmSpeed(1);
 
         action.finish();
     }
 
-    private void boopRightMineral(ActionTracker callingAction, double movingSpeed)
+    private void boopRightMineral()
     {
         // We start 20deg turned right from the lander
-        ActionTracker action = callingAction.startChildAction("rightMineral", null);
+        Action action = new ImmediateAction("rightMineral");
         action.setStatus("Moving away from lander");
-        robot.inchmove(opmodeAction, 2, movingSpeed);
+        robot.startInchMove(2, MOVING_SPEED).waitUntilFinished();
         action.setStatus("Turning and moving towards mineral");
-        robot.turnRight(opmodeAction, 40);
-        robot.inchmove(opmodeAction, 40, 0.6);
-        robot.turnRight(opmodeAction, 100);
-        robot.inchmoveBack(opmodeAction, 12, movingSpeed);
-        robot.setSwingArmSpeed(opmodeAction, 1);
+        robot.startTurningRight(40).waitUntilFinished();
+        robot.startInchMove(40, 0.6).waitUntilFinished();
+        robot.startTurningRight(100).waitUntilFinished();
+        robot.startInchMoveBack(12, MOVING_SPEED).waitUntilFinished();
+        robot.setSwingArmSpeed(1);
 
         action.finish();
     }

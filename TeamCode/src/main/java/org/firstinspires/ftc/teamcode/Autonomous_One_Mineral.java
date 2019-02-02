@@ -10,25 +10,25 @@ public class Autonomous_One_Mineral extends AutonomousOpMode
         void teamInit()
         {
                 super.teamInit();
-                robot.calibrateHook(opmodeAction);
+                new OngoingAction_CalibrateHook().waitUntilFinished();
         }
 
         @Override
-        void teamRun()
+        public void teamRun()
         {
-                robot.hookUp(opmodeAction, 1, false);
-                robot.turnRight(opmodeAction, 15);
-                robot.hookDown(opmodeAction, 1, false);
-                robot.inchmove( opmodeAction, 5, 0.4);
-                robot.stop(opmodeAction, false);
-                robot.turnLeft(opmodeAction, 60);
-                robot.inchmove(opmodeAction, 30, 1);
-                robot.turnLeft(opmodeAction, 90);
-                robot.inchmove(opmodeAction, 30, 1);
-                robot.turnLeft(opmodeAction, 180);
+                robot.startMovingHookUp(1);
+                robot.startTurningRight(15).waitUntilFinished();
+                robot.startMovingHookDown(1);
+                robot.startInchMove( 5, 0.4).waitUntilFinished();
+                robot.stopWithoutBraking();
+                robot.startTurningLeft(60).waitUntilFinished();
+                robot.startInchMove(30, 1).waitUntilFinished();
+                robot.startTurningLeft(90).waitUntilFinished();
+                robot.startInchMove(30, 1).waitUntilFinished();
+                robot.startTurningLeft(180).waitUntilFinished();
                 //FLING THE MARKER
-                robot.inchmove(opmodeAction, 75,1);
+                robot.startInchMove(75,1).waitUntilFinished();
                 //FLING THE MARKER ARM INTO THE CRATER AFTER EXTENDOING THE ARM
-                robot.hookDown(opmodeAction, 1, true);
+                robot.startMovingHookDown(1).waitUntilFinished();
         }
 }

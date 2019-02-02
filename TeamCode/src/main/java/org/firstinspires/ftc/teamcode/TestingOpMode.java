@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp(name = "T: Testing", group = "Tinkering")
 
@@ -12,53 +11,28 @@ public class TestingOpMode extends TeleOpMode
     public void teleOpLoop()
     {
         super.teleOpLoop();
-        int lCurrentPosition = robot.getLeftMotor().getCurrentPosition();
-        int rCurrentPosition = robot.getRightMotor().getCurrentPosition();
-        int clicksPerFoot = (int)(79.27 * 12);
-
-        if(gamepad1.dpad_left && !gamepad1.a)
+        if(gamepad1.dpad_left.onPress)
         {
-            robot.resetCorrectHeading(gamepad1Action, "DPad: Turning left from current position");
-            if(gamepad1.a)
-            {
-                robot.pivotTurnLeft(gamepad1Action, 90);
-            }
+            robot.resetCorrectHeading("DPad: Turning left from current position");
+            if(gamepad1.a.isPressed)
+                robot.startTurningLeft(90, Robot.TURN_TYPE.PIVOT);
             else
-            {
-                robot.turnLeft(gamepad1Action, 90);
-            }
-
-            //Wait until button is released
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_left)
-            {}
+                robot.startTurningLeft(90);
         }
         
-        if(gamepad1.dpad_right)
+        if(gamepad1.dpad_right.onPress)
         {
-            robot.resetCorrectHeading(gamepad1Action, "DPad: Turning right from current position");
-            if(gamepad1.a)
-                robot.pivotTurnRight(gamepad1Action, 90);
+            robot.resetCorrectHeading("DPad: Turning right from current position");
+            if(gamepad1.a.isPressed)
+                robot.startTurningRight(90, Robot.TURN_TYPE.PIVOT);
             else
-                robot.turnRight(gamepad1Action, 90);
-
-            //Wait until button is released
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_right)
-            {}
+                robot.startTurningRight(90);
         }
 
-        if(gamepad1.dpad_up)
-        {
-            robot.inchmove(gamepad1Action, 12, 1);
-            //Wait until button is released
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_up)
-            {}
-        }
-        if(gamepad1.dpad_down)
-        {
-            robot.inchmoveBack(gamepad1Action, 12, 1);
-            //Wait until button is released
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_down)
-            {}
-        }
+        if(gamepad1.dpad_up.onPress)
+            robot.startInchMove(12, 1);
+
+        if(gamepad1.dpad_down.onPress)
+            robot.startInchMoveBack(12, 1);
     }
 }

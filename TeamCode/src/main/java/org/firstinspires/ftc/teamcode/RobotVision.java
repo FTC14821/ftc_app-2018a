@@ -37,11 +37,14 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.teamcode.scheduler.Action;
+import org.firstinspires.ftc.teamcode.scheduler.RepeatedAction;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
 
 /**
  * This came from ConceptTensorFlowObjectDetectionOpMode
@@ -87,15 +90,16 @@ public class RobotVision  {
      */
     private TFObjectDetector tfod;
     boolean tfodIsActive = false;
+    RepeatedAction visionMonitor;
 
     Robot robot;
 
-    public RobotVision(ActionTracker action, Robot robot)
+    public RobotVision(Robot robot)
     {
         this.robot = robot;
     }
 
-    public void init(ActionTracker action) {
+    public void init() {
         initTelemtry();
 
         if (!ClassFactory.getInstance().canCreateTFObjectDetector())
@@ -108,6 +112,15 @@ public class RobotVision  {
         // first.
         initVuforia();
         initTfod();
+
+        visionMonitor = new RepeatedAction("Vision")
+        {
+            @Override
+            protected void doTask()
+            {
+                RobotVision.this.loop();
+            }
+        }.start();
     }
 
     private void initTelemtry()
@@ -126,7 +139,7 @@ public class RobotVision  {
                         else
                             status = "Active";
 
-                        return robot.opMode.saveTelemetryData(
+                        return robot.saveTelemetryData(
                                 "Vision",
                                 "%s: #%d, Colors L->R: %s",
                                 status, objectsFromLeftToRight.size(), objectColorStringFromLeftToRight);
@@ -140,7 +153,7 @@ public class RobotVision  {
     }
 
 
-    public void activate(ActionTracker opmodeAction)
+    public void activate()
     {
         if (!isReady())
         {
@@ -148,22 +161,23 @@ public class RobotVision  {
             return;
         }
 
+        robot.logChange("Vision", "activating");
+
         if (!tfodIsActive)
             tfod.activate();
         tfodIsActive = true;
     }
 
-    public void deactivate(ActionTracker callingAction)
+    public void deactivate()
     {
-        ActionTracker action = callingAction.startChildAction("DecativatingVision", null);
+        robot.logChange("Vision", "deactivating");
         if (tfodIsActive)
             tfod.deactivate();
 
         tfodIsActive = false;
-        action.finish();
     }
 
-    public void loop(ActionTracker action)
+    public void loop()
     {
         if (!tfodIsActive)
             return;
@@ -189,11 +203,11 @@ public class RobotVision  {
                 }
             });
 
-            rememberLatestObjectRecogniations(action, updatedRecognitions);
+            rememberLatestObjectRecogniations(updatedRecognitions);
         }
     }
 
-    private void rememberLatestObjectRecogniations(ActionTracker callingAction, List<Recognition> updatedRecognitions)
+    private void rememberLatestObjectRecogniations(List<Recognition> updatedRecognitions)
     {
         // We save the objects three different ways (as Recogitions, as enumerated colors and as a string
         objectsFromLeftToRight.clear();
@@ -202,16 +216,16 @@ public class RobotVision  {
         {
             if (recog.getConfidence() > RECOGNITION_CONFIDENCE_STANDARD)
             {
-                callingAction.setStatus("Found object with sufficient recognition: %s", recog);
+                log("Found object with sufficient recognition: %s", recog);
                 objectsFromLeftToRight.add(recog);
             }
             else
             {
-                callingAction.setStatus("Found object with insufficient recognition: %s", recog);
+                log("Found object with insufficient recognition: %s", recog);
             }
         }
 
-        callingAction.setStatus("%d out of %d recognizied objects met recognition standard %.2f",
+        visionMonitor.setStatus("%d out of %d recognizied objects met recognition standard %.2f",
             objectsFromLeftToRight.size(), updatedRecognitions.size(), RECOGNITION_CONFIDENCE_STANDARD);
 
         objectColorsFromLeftToRight.clear();

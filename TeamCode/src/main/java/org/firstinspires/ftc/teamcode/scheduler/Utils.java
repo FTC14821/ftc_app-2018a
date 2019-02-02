@@ -1,6 +1,5 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.scheduler;
 
-import static org.firstinspires.ftc.teamcode.Utils.*;
 import java.util.Date;
 
 public class Utils {
@@ -14,14 +13,20 @@ public class Utils {
             return String.format("Format Error: %s", format);
         }
     }
+
     public static void log(String format, Object... args){
-        System.err.println(safeStringFormat("%s 14821 %s", new Date(), safeStringFormat(format, args)));
+        if (Action.getCurrentAction() != null)
+        {
+            Action.getCurrentAction().log(format, args);
+        }
+        else
+        {
+            log_raw(format, args);
+        }
     }
 
-    public static void sleep(long time_ms){
-        try {
-            Thread.sleep(time_ms);
-        } catch (InterruptedException e){
-        }
+    public static void log_raw(String format, Object... args)
+    {
+        System.err.println(safeStringFormat("%s 14821 %s", new Date(), safeStringFormat(format, args)));
     }
 }

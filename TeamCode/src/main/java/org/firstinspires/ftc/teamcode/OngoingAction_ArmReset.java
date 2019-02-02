@@ -1,48 +1,33 @@
 package org.firstinspires.ftc.teamcode;
 
-public class OngoingAction_ArmReset extends AbstractOngoingAction
+import org.firstinspires.ftc.teamcode.scheduler.EndableAction;
+
+public class OngoingAction_ArmReset extends EndableAction
 {
-    public OngoingAction_ArmReset(ActionTracker callingActionTracker, Robot robot)
+    Robot robot = Robot.get();
+
+    public OngoingAction_ArmReset()
     {
-        super(callingActionTracker, robot, "ArmReset" ,null );
+        super("ArmReset" );
     }
 
     @Override
-    public void start()
+    public EndableAction start()
     {
-        robot.setArmExtensionPower(actionTracker, -1);
+        new OngoingAction_CalibrateArmSwing().start();
+        new OngoingAction_CalibrateArmExtension().start();
+        return this;
     }
 
     @Override
-    public void loop()
+    protected void cleanup(boolean actionWasCompletedsSuccessfully)
     {
-        if ( robot.getArmSwingZone() == 3 )
-        {
-            robot.setSwingArmSpeed(actionTracker,-1);
-        }
-        else
-        {
-            if ( robot.armExtensionMotor.getPower() == 0 )
-                robot.setSwingArmSpeed(actionTracker, -0.3);
-            else
-                robot.setSwingArmSpeed(actionTracker, 0);
-        }
+        super.cleanup(actionWasCompletedsSuccessfully);
     }
 
     @Override
-    public void cleanup()
+    public boolean isDone(StringBuilder newStatus)
     {
-        robot.armExtensionMotor.setPower(0);
-        robot.swingMotor.setPower(0);
-        super.cleanup();
-    }
-
-    @Override
-    public boolean isDone()
-    {
-        if (robot.armExtensionMotor.getPower() == 0 && robot.swingMotor.getPower() == 0)
-            return true;
-        else
-            return false;
+        return areChildrenDone(newStatus);
     }
 }

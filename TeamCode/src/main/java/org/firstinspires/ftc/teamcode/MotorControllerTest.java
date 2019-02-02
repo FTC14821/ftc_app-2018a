@@ -17,72 +17,53 @@ public class MotorControllerTest extends TeleOpMode
         int rCurrentPosition = robot.getRightMotor().getCurrentPosition();
         int clicksPerFoot = (int)(79.27 * 12);
 
-        if(gamepad1.dpad_left)
+        if (gamepad1.dpad_left.onPress)
         {
-            robot.getLeftMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            robot.getRightMotor().setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.setDrivingMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+            robot.getLeftMotor().setPower(-Math.max(gamepad1.right_trigger,0.05));
+            robot.getRightMotor().setPower(+Math.max(gamepad1.right_trigger,0.05));
 
-            //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_left)
-            {
-                robot.getLeftMotor().setPower(-Math.max(gamepad1.right_trigger,0.05));
-                robot.getRightMotor().setPower(+Math.max(gamepad1.right_trigger,0.05));
-            }
-            robot.getLeftMotor().setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            robot.getRightMotor().setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            robot.stop(gamepad1Action, true);
+            robot.setDrivingMotorMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            robot.startStopping().waitUntilFinished();
         }
 
-        if(gamepad1.dpad_right)
+        if(gamepad1.dpad_right.onPress)
         {
-            robot.resetCorrectHeading(gamepad1Action, "DPad: Turning right from current position");
-            if (gamepad1.a)
-                robot.turnRight(gamepad1Action, 180);
+            robot.resetCorrectHeading("DPad: Turning right from current position");
+            if (gamepad1.a.onPress)
+                robot.startTurningRight(180);
             else
-                robot.turnRight(gamepad1Action, 90);
-
-            //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_right)
-            {}
+                robot.startTurningRight(90);
         }
 
-        if(gamepad1.dpad_up)
+        if(gamepad1.dpad_up.onPress)
         {
-            int oneFoot = (int)(Robot.ENCODER_CLICKS_PER_INCH / 50);
             robot.getLeftMotor().setMode(DcMotor.RunMode.RUN_TO_POSITION);
             robot.getLeftMotor().setTargetPosition(lCurrentPosition + clicksPerFoot);
             robot.getLeftMotor().setPower(0.5);
             robot.getRightMotor().setMode(DcMotor.RunMode.RUN_TO_POSITION);
             robot.getRightMotor().setTargetPosition(rCurrentPosition + clicksPerFoot);
             robot.getRightMotor().setPower(0.5);
-
-            //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_up)
-            {}
         }
-        if(gamepad1.dpad_down)
+        if(gamepad1.dpad_down.onPress)
         {
             // Reset values and Spin for 10k clicks
-            robot.resetCorrectHeading( gamepad1Action, "Measuring turning for 10k clicks");
-            robot.resetDrivingEncoders(gamepad1Action, "Measuring turning for 10k clicks");
+            robot.resetCorrectHeading( "Measuring turning for 10k clicks");
+            robot.resetDrivingEncoders("Measuring turning for 10k clicks");
 
-            robot.getLeftMotor().setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.setDrivingMotorMode(DcMotor.RunMode.RUN_TO_POSITION);
             robot.getLeftMotor().setTargetPosition(lCurrentPosition + 10000);
             robot.getLeftMotor().setPower(0.5);
-            robot.getRightMotor().setMode(DcMotor.RunMode.RUN_TO_POSITION);
             robot.getRightMotor().setTargetPosition(rCurrentPosition - 10000);
             robot.getRightMotor().setPower(-0.5);
 
             //Wait until robot has reached target positions
-            while((robot.getLeftMotor().isBusy() || robot.getRightMotor().isBusy()) && shouldOpModeKeepRunning(gamepad1Action))
+            while((robot.getLeftMotor().isBusy() || robot.getRightMotor().isBusy()) && shouldOpModeKeepRunning())
             {
             }
-            robot.stop(gamepad1Action, true);
-
-            //Wait until button is released before switching front and back
-            while(shouldOpModeKeepRunning(gamepad1Action) && gamepad1.dpad_up)
-            {}
+            robot.setDrivingMotorMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            robot.startStopping().waitUntilFinished();
         }
     }
 }

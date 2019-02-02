@@ -7,9 +7,8 @@ abstract class AutonomousOpMode extends BaseLinearOpMode
     @Override
     void teamInit() {
             super.teamInit();
-            robot.setDrivingZeroPowerBehavior(opmodeAction, DcMotor.ZeroPowerBehavior.BRAKE);
+            robot.setDrivingZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
     }
 
-    // What happens after Play is pressed
-    abstract void teamRun();
+    abstract public void teamRun();
 }

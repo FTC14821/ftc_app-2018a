@@ -1,40 +1,46 @@
 package org.firstinspires.ftc.teamcode;
 
-public class OngoingAction_CalibrateHook extends AbstractOngoingAction
+import org.firstinspires.ftc.teamcode.scheduler.EndableAction;
+
+import static org.firstinspires.ftc.teamcode.scheduler.Utils.safeStringFormat;
+
+public class OngoingAction_CalibrateHook extends EndableAction
 {
-    public OngoingAction_CalibrateHook(ActionTracker parentActionTracker, Robot robot)
+    Robot robot = Robot.get();
+
+    public OngoingAction_CalibrateHook()
     {
-        super(parentActionTracker, robot, "CalibrateHook", null);
+        super("CalibrateHook");
     }
 
     @Override
-    public void start()
+    public EndableAction start()
     {
-        robot.hookSafetyIsDisabled = true;
-        robot.setHookPower(actionTracker, -0.15);
+        super.start();
+        robot.hookSafetyIsDisabled=true;
+        robot.setHookPower(-0.15);
+        return this;
     }
 
     @Override
-    public void loop()
+    protected void cleanup(boolean actionWasCompleted)
     {
+        robot.hookSafetyIsDisabled=false;
+        robot.hookMotor.setPower(0);
 
+        if (actionWasCompleted)
+        {
+            robot.resetMotorEncoder("Hook", robot.hookMotor);
+            robot.hookCalibrated = true;
+        }
+        super.cleanup(actionWasCompleted);
     }
 
     @Override
-    public void cleanup()
+    public boolean isDone(StringBuilder statusMessage)
     {
-        robot.setHookPower(actionTracker, 0);
-        robot.hookSafetyIsDisabled = false;
-
-        super.cleanup();
-    }
-
-    @Override
-    public boolean isDone()
-    {
-        if(robot.hookSpeed < 10)
-            return true;
-        else
-            return false;
+        // the hook motor will stop when the hook reaches the bottom
+        statusMessage.append(safeStringFormat("Hook speed is %d", robot.hookSpeed));
+        return ( robot.hookSpeed > -5 );
     }
 }

@@ -14,13 +14,16 @@ public class TankMode extends TeleOpMode
         double powerLeft = -gamepad1.left_stick_y;
         double powerRight = -gamepad1.right_stick_y;
 
-        if(gamepad1.left_trigger > 0)
+        if(gamepad1.left_trigger > 0.05)
         {
-            gamepad1Action.setStatus("GP1.left_trigger ==> half power");
+            robot.logChange("Driving power","Half power: GP1.left_trigger");
             powerLeft /= 2;
             powerRight /= 2;
         }
+        else
+            robot.logChange("Driving power", "Full power");
 
-        robot.setDrivingPowers(gamepad1Action, powerLeft, powerRight);
+
+        robot.setDrivingPowers(powerLeft, powerRight);
     }
 }
