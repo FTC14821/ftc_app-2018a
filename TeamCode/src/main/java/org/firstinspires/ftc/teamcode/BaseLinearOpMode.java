@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.util.RobotLog;
 import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.scheduler.Action;
+import org.firstinspires.ftc.teamcode.scheduler.EventGamepad;
 import org.firstinspires.ftc.teamcode.scheduler.ImmediateAction;
 import org.firstinspires.ftc.teamcode.scheduler.RepeatedAction;
 import org.firstinspires.ftc.teamcode.scheduler.Scheduler;
@@ -19,15 +20,16 @@ public abstract class BaseLinearOpMode extends LinearOpMode implements Scheduler
     public enum OPMODE_STATE {NEW, INITIALIZING, WAITING_FOR_START, RUNNING, STOPPING};
 
     private static final long TELEMETRY_LOGGING_INTERVAL_MS = 250L;
+
+    final Scheduler scheduler = Scheduler.get(this);
     Robot robot;
     OPMODE_STATE state = OPMODE_STATE.NEW;
     long opmodeStateChanged_ms = System.currentTimeMillis();
 
 
     Action opmodeAction = new ImmediateAction("OpMode", "%s", getClass().getSimpleName());
+    EventGamepad gamepad1, gamepad2;
 
-
-    final Scheduler scheduler = new Scheduler(this);
 
     // First thing to init
     final void baseInit()
@@ -91,6 +93,10 @@ public abstract class BaseLinearOpMode extends LinearOpMode implements Scheduler
 
     @Override
     public void runOpMode() throws InterruptedException {
+        gamepad1 = new EventGamepad("GP1", super.gamepad1);
+        gamepad2 = new EventGamepad("GP2", super.gamepad2);
+
+
         try
         {
             setOpModeState(OPMODE_STATE.INITIALIZING);
@@ -137,7 +143,10 @@ public abstract class BaseLinearOpMode extends LinearOpMode implements Scheduler
 
     public boolean shouldSchedulerStop()
     {
-        return isStopRequested();
+        if ( !isStarted() )
+            return false;
+
+        return false;
     }
 
     public void schedulerSleep(long time_ms)

@@ -1,18 +1,20 @@
 package org.firstinspires.ftc.teamcode.scheduler;
 
 import org.firstinspires.ftc.robotcore.external.Func;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Robot;
 import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
 public class Scheduler {
-    Set<OngoingAction> ongoingActions = new HashSet<>();
+    // Create a set that keeps items in order
+    Set<OngoingAction> ongoingActions
+            = Collections.newSetFromMap(new LinkedHashMap<OngoingAction,Boolean>());
+
     final SchedulerController schedulerController;
 
     Action currentAction;
@@ -27,25 +29,32 @@ public class Scheduler {
     // This keeps the delays between the loops for LOOP_TIME_MOVING_AVERAGE_MS
 
     private static final long LOOP_TIME_MOVING_AVERAGE_MS = 2000L;
-    LinkedHashMap<Long, Long> loopDurationHistory_ns = new LinkedHashMap<Long, Long>() {
-        @Override
-        protected boolean removeEldestEntry(Entry<Long, Long> eldest) {
-            long age_ms = System.currentTimeMillis() - eldest.getKey();
-            return age_ms > LOOP_TIME_MOVING_AVERAGE_MS;
-        }
-    };
+    private RollingStatistics loopDurationHistory_ns = new RollingStatistics(LOOP_TIME_MOVING_AVERAGE_MS);
 
+    private long schedulerStatusLogInterval_ms = 5000;
+    private long schedulerStatusLog_lastLogTime_ms = 0;
 
     private static Scheduler sharedInstance;
 
     // How many scheduling loops have we started
     private long loopNumber;
 
-    public static Scheduler get(){
+    public static Scheduler get(SchedulerController schedulerController)
+    {
+        if (sharedInstance == null )
+            sharedInstance = new Scheduler(schedulerController);
+
         return sharedInstance;
     }
 
-    public Scheduler(SchedulerController schedulerController)
+    public static Scheduler get(){
+        if ( sharedInstance==null )
+            throw new IllegalStateException("Can only use Scheduler.get() after Scheduler.get(controller) is called");
+
+        return sharedInstance;
+    }
+
+    private Scheduler(SchedulerController schedulerController)
     {
         if (sharedInstance!=null)
             throw new IllegalStateException("Can only have one Scheduler");
@@ -62,7 +71,7 @@ public class Scheduler {
                                 loopNumber,
                                 lastLoopDuration_ns/1e6,
                                 LOOP_TIME_MOVING_AVERAGE_MS/1000,
-                                getRecentAverageLoopDuration_ns()/1e6);
+                                loopDurationHistory_ns.getAverage()/1e6);
                     }
                 });
 
@@ -99,6 +108,9 @@ public class Scheduler {
             log_raw("Scheduler is stopping!");
             throw new StopRobotException("Scheduler stopping");
         }
+
+        if ( System.currentTimeMillis() >= schedulerStatusLog_lastLogTime_ms+schedulerStatusLogInterval_ms )
+            logSchedulerStatus();
 
         // Are we starting a loop or are we re-entering loop?...
         Action currentActionWhenSchedulerLoopStarted = currentAction;
@@ -165,36 +177,18 @@ public class Scheduler {
         // We reached the end of all the actions.
         lastLoopEndTime_ns = System.nanoTime();
         lastLoopDuration_ns = lastLoopEndTime_ns - lastLoopStartTime_ns;
-        loopDurationHistory_ns.put(lastLoopStartTime_ns/1000000, lastLoopDuration_ns);
+        loopDurationHistory_ns.put(lastLoopDuration_ns);
     }
 
-    public int getRecentAverageLoopDuration_ns()
+    private void logSchedulerStatus()
     {
-        long measurementTotal = 0;
-        long count=0;
-        Iterator<Long> loopIntervalHistory_iterator = loopDurationHistory_ns.keySet().iterator();
-        while (loopIntervalHistory_iterator.hasNext())
-        {
-            Long time_ms = loopIntervalHistory_iterator.next();
-            Long measurement = loopDurationHistory_ns.get(time_ms);
+        for (OngoingAction ongoingAction : ongoingActions)
+            log_raw("ScheduledAction %30s [dur_ms=%d] %s",
+                    ongoingAction.label,
+                    (int)(ongoingAction.lastLoopDuration_ns/1e6),
+                    ongoingAction.status);
 
-            long age_ms  = System.currentTimeMillis() - time_ms;
-            if (age_ms <= LOOP_TIME_MOVING_AVERAGE_MS)
-            {
-                count++;
-                measurementTotal += measurement;
-            }
-            else
-                // The loopDurationHistory_ns is somewhat self-cleaning (one added, one removed)
-                // but this cleans it more if old entries accumulate
-                loopIntervalHistory_iterator.remove();
-        }
-        if (count == 0)
-            return 0;
-
-        double averageMeasurement = 1.0*measurementTotal / count;
-
-        return (int) averageMeasurement;
+        schedulerStatusLog_lastLogTime_ms = System.currentTimeMillis();
     }
 
     public void sleep(long time_ms, String reasonFormat, Object... reasonArgs)
@@ -222,6 +216,22 @@ public class Scheduler {
             {
                 sleep(10, "Waiting for %s to finish", endableAction.toShortString());
             }
+        }
+    }
+
+    public void abortAllEndableActions(String reasonFormat, Object... reasonArgs)
+    {
+        String reason = safeStringFormat(reasonFormat, reasonArgs);
+
+        for(OngoingAction action: new ArrayList<>(ongoingActions))
+        {
+            if(action.hasFinished())
+                continue;
+
+            if(!(action instanceof EndableAction))
+                continue;
+            EndableAction endableAction = (EndableAction) action;
+            endableAction.abort(reason);
         }
     }
 }

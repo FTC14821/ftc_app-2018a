@@ -4,8 +4,8 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 
 public class EventGamepad 
 {
-    String name;
-    Gamepad actualGamepad;
+    final String name;
+    final Gamepad actualGamepad;
 
     public EventButton dpad_up;
     public EventButton dpad_down;
@@ -32,6 +32,9 @@ public class EventGamepad
     public EventGamepad(String name, Gamepad actualGamepad)
     {
         this.name=name;
+        if (actualGamepad==null)
+            throw new IllegalStateException("Constructing EventGamepad with null gamepad??");
+
         this.actualGamepad =actualGamepad;
 
         dpad_up=new EventButton(String.format("%s-dpad_up", name));
@@ -62,6 +65,12 @@ public class EventGamepad
     protected void updateFromActualGamepad()
     {
         // Tell all the Button objects about the actualGamepad's boolean values
+        if (actualGamepad==null)
+        {
+            throw new IllegalStateException("actualGamepad is null!!");
+        }
+
+
         dpad_up.update(actualGamepad.dpad_up);
         dpad_down.update(actualGamepad.dpad_down);
         dpad_left.update(actualGamepad.dpad_left);
@@ -85,5 +94,11 @@ public class EventGamepad
         left_trigger = actualGamepad.left_trigger;
         right_trigger = actualGamepad.right_trigger;
 
+    }
+
+    @Override
+    public String toString()
+    {
+        return actualGamepad.toString();
     }
 }

@@ -1,15 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
 import org.firstinspires.ftc.robotcore.external.Func;
-import org.firstinspires.ftc.teamcode.scheduler.EventGamepad;
 import org.firstinspires.ftc.teamcode.scheduler.RepeatedAction;
+import org.firstinspires.ftc.teamcode.scheduler.Scheduler;
 
 import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
 
 abstract class TeleOpMode extends BaseLinearOpMode {
-    EventGamepad gamepad1 = new EventGamepad("GP1", super.gamepad1);
-    EventGamepad gamepad2 = new EventGamepad("GP2", super.gamepad2);
-
     @Override
     public void teamInit()
     {
@@ -42,6 +39,10 @@ abstract class TeleOpMode extends BaseLinearOpMode {
     // Called over and over until stop button is pressed
     public void teleOpLoop()
     {
+        if(gamepad1.x.isPressed)
+            Scheduler.get().abortAllEndableActions("Gamepad1 aborting actions");
+
+
         if(gamepad2.left_bumper.isPressed)
             robot.leftBoxServo.setPosition(20 + robot.leftBoxServo.getPosition());
 

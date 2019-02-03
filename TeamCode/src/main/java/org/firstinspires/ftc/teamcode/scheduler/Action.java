@@ -79,7 +79,7 @@ public abstract class Action {
     public void log(String messageFormat, Object... args)
     {
         // Prefix the message with indentation and our label
-        Utils.log(messageIndentationString + toShortString() + ": " +messageFormat, args);
+        Utils.log_raw("<%s> %s", label, safeStringFormat(messageFormat, args));
     }
 
     public void setStatus(String statusFormat, Object... args)

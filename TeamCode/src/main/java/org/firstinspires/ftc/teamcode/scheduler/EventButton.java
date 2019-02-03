@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.scheduler;
 
+import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
+
 public class EventButton
 {
     String name;
@@ -25,11 +27,13 @@ public class EventButton
         {
             if (isPressed)
             {
+                log("Button pressed:  %s", name);
                 onPress = true;
                 onRelease = false;
             }
             else
             {
+                log("Button released: %s", name);
                 onPress = false;
                 onRelease = true;
             }

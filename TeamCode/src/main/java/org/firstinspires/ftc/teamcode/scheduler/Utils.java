@@ -27,6 +27,6 @@ public class Utils {
 
     public static void log_raw(String format, Object... args)
     {
-        System.err.println(safeStringFormat("%s 14821 %s", new Date(), safeStringFormat(format, args)));
+        System.err.println("14821 " + safeStringFormat(format, args));
     }
 }

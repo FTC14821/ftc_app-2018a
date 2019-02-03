@@ -236,7 +236,7 @@ public class Robot
             lastTelemetryLoggingTime_ms = System.currentTimeMillis();
             for (Map.Entry entry : latestTelemetryData.entrySet())
             {
-                log("Telemetry: %12s: %s", entry.getKey(), entry.getValue());
+                log("%12s: %s", entry.getKey(), entry.getValue());
             }
         }
     }

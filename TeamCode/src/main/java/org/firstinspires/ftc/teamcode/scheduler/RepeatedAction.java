@@ -27,9 +27,9 @@ public abstract class RepeatedAction extends OngoingAction{
         startTime_ns = System.nanoTime();
         finishTime_ns= 0;
 
-        log("> Running");
+        //log("> Running");
         doTask();
-        log("< Done");
+        //log("< Done");
 
         // Each loop is a separate start time
         startTime_ns=0;
