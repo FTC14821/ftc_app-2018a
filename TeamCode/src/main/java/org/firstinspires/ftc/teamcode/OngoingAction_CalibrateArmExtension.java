@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import org.firstinspires.ftc.teamcode.scheduler.EndableAction;
-import org.firstinspires.ftc.teamcode.scheduler.OngoingAction;
 
 import static org.firstinspires.ftc.teamcode.scheduler.Utils.safeStringFormat;
 
@@ -35,7 +34,7 @@ public class OngoingAction_CalibrateArmExtension extends EndableAction
     @Override
     protected void cleanup(boolean actionWasCompleted)
     {
-        robot.setArmExtensionPower(0);
+        robot.setArmExtensionPower_raw(0);
         robot.armExtensionSafetyIsDisabled=false;
 
         if (actionWasCompleted)

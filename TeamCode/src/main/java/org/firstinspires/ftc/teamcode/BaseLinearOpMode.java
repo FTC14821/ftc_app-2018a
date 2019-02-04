@@ -21,7 +21,7 @@ public abstract class BaseLinearOpMode extends LinearOpMode implements Scheduler
 
     private static final long TELEMETRY_LOGGING_INTERVAL_MS = 250L;
 
-    final Scheduler scheduler = Scheduler.get(this);
+    final Scheduler scheduler = new Scheduler(this);
     Robot robot;
     OPMODE_STATE state = OPMODE_STATE.NEW;
     long opmodeStateChanged_ms = System.currentTimeMillis();
@@ -149,6 +149,11 @@ public abstract class BaseLinearOpMode extends LinearOpMode implements Scheduler
         return false;
     }
 
+    /**
+     * Should be used only by the scheduler. Non-internal-scheduler needs should use teamSleep()
+     * which calls Scheduler.sleep which then calls this.
+     * @param time_ms
+     */
     public void schedulerSleep(long time_ms)
     {
         long stopTime_ms = System.currentTimeMillis() + time_ms;

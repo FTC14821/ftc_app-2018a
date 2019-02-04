@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.scheduler;
 
 import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Robot;
 import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
 
@@ -11,6 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 
 public class Scheduler {
+    final static long MINIMUM_TIME_BETWEEN_ACTION_LOOPS_MS = 20L;
+
     // Create a set that keeps items in order
     Set<OngoingAction> ongoingActions
             = Collections.newSetFromMap(new LinkedHashMap<OngoingAction,Boolean>());
@@ -39,42 +42,33 @@ public class Scheduler {
     // How many scheduling loops have we started
     private long loopNumber;
 
-    public static Scheduler get(SchedulerController schedulerController)
-    {
-        if (sharedInstance == null )
-            sharedInstance = new Scheduler(schedulerController);
-
-        return sharedInstance;
-    }
-
     public static Scheduler get(){
         if ( sharedInstance==null )
-            throw new IllegalStateException("Can only use Scheduler.get() after Scheduler.get(controller) is called");
+            throw new IllegalStateException("Can only use Scheduler.get() after new Scheduler(controller) is called");
 
         return sharedInstance;
     }
 
-    private Scheduler(SchedulerController schedulerController)
+    public Scheduler(SchedulerController schedulerController)
     {
-        if (sharedInstance!=null)
-            throw new IllegalStateException("Can only have one Scheduler");
-        else
-            sharedInstance = this;
-
+        sharedInstance = this;
         this.schedulerController = schedulerController;
 
-        schedulerController.getTelemetry().addLine()
+        getTelemetry().addLine()
                 .addData("Scheduler", new Func<Object>() {
                     @Override
                     public Object value() {
-                        return Robot.get().saveTelemetryData("Scheduler", "% loops. Last loop time: %.0fms (Average over last %.1f seconds: ~%.0f)",
+                        return Robot.get().saveTelemetryData("Scheduler", "% loops. Average loop time over last %.1f seconds: ~%.0f)",
                                 loopNumber,
-                                lastLoopDuration_ns/1e6,
                                 LOOP_TIME_MOVING_AVERAGE_MS/1000,
                                 loopDurationHistory_ns.getAverage()/1e6);
                     }
                 });
+    }
 
+    Telemetry getTelemetry()
+    {
+        return schedulerController.getTelemetry();
     }
 
     void actionStarted(Action a)
@@ -122,6 +116,16 @@ public class Scheduler {
             // TODO: This could sleep long enough to slow down to a target looping rate (eg 20 loops/sec)
             schedulerController.schedulerSleep(1);
             lastLoopStartTime_ns = System.nanoTime();
+        } else {
+            // Has our original caller been aborted? If so, then we need to throw an exception back out
+            if (currentActionWhenSchedulerLoopStarted instanceof EndableAction)
+            {
+                if (((EndableAction) currentActionWhenSchedulerLoopStarted).wasAborted())
+                {
+                    log_raw("Action was aborted after it called loop(): %s", currentActionWhenSchedulerLoopStarted);
+                    throw new StopActionException("Cleanup after being aborted");
+                }
+            }
         }
 
         // Run .loop on all ongoing actions
@@ -142,42 +146,73 @@ public class Scheduler {
                 continue;
             }
 
-            currentAction = a;
-
-            // Check to see if EnableAction is done
-            if ( a instanceof EndableAction )
+            try
             {
-                EndableAction endableActionA = ((EndableAction) a);
-                StringBuilder statusMessage = new StringBuilder();
-
-                boolean isDone = endableActionA.isDone(statusMessage);
-
-                if ( statusMessage.length() > 0 )
-                    endableActionA.setStatus("(done)" + statusMessage.toString());
-
-                if ( isDone )
-                {
-                    endableActionA.finish(statusMessage.toString());
-                    actionFinished(a);
-                    continue;
-                }
+                currentAction = a;
+                runOngoingActionLoopMethod(a);
+            } finally
+            {
+                currentAction = currentActionWhenSchedulerLoopStarted;
             }
-
-            a.numberOfLoops++;
-            long startTime_ns = System.nanoTime();
-            a.lastLoopStart_ns = startTime_ns;
-
-            a.loop();
-
-            long endTime_ns = System.nanoTime();
-            a.lastLoopDuration_ns = endTime_ns - startTime_ns;
-
-            currentAction = null;
         }
         // We reached the end of all the actions.
         lastLoopEndTime_ns = System.nanoTime();
         lastLoopDuration_ns = lastLoopEndTime_ns - lastLoopStartTime_ns;
         loopDurationHistory_ns.put(lastLoopDuration_ns);
+    }
+
+    private void runOngoingActionLoopMethod(OngoingAction a)
+    {
+        // Check to see if EnableAction is done
+        if (a instanceof EndableAction)
+        {
+            EndableAction endableActionA = ((EndableAction) a);
+            StringBuilder statusMessage = new StringBuilder();
+
+            boolean isDone = endableActionA.isDone(statusMessage);
+
+            if (statusMessage.length() > 0)
+                endableActionA.setStatus("(done)" + statusMessage.toString());
+
+            if (isDone)
+            {
+                endableActionA.finish(statusMessage.toString());
+                actionFinished(a);
+                return;
+            }
+        }
+
+        // Run loop() if it has been long enough
+        long timeSinceLoopWasCalled_ns = System.nanoTime() - a.lastLoopStart_ns;
+
+        if (timeSinceLoopWasCalled_ns > 1e6 * MINIMUM_TIME_BETWEEN_ACTION_LOOPS_MS)
+        {
+            long startTime_ns = System.nanoTime();
+
+            try
+            {
+                a.numberOfLoops++;
+                a.lastLoopStart_ns = startTime_ns;
+                a.loop();
+            } catch (StopRobotException e)
+            {
+                log_raw("Robot is stopping");
+                throw e;
+            } catch (StopActionException e)
+            {
+                log_raw("Action was stopped");
+                // This is where the StopActionException is handled.
+                // There is nothing left to do as the Exception is thrown after other cleanup has occurred
+            } catch (RuntimeException e)
+            {
+                log_raw("%s threw exception %s", a, e.getMessage());
+                throw e;
+            } finally
+            {
+                long endTime_ns = System.nanoTime();
+                a.lastLoopDuration_ns = endTime_ns - startTime_ns;
+            }
+        }
     }
 
     private void logSchedulerStatus()
@@ -223,15 +258,20 @@ public class Scheduler {
     {
         String reason = safeStringFormat(reasonFormat, reasonArgs);
 
+        log("Aborting all EndableActions: %s", reason);
+        int count=0;
         for(OngoingAction action: new ArrayList<>(ongoingActions))
         {
-            if(action.hasFinished())
-                continue;
-
             if(!(action instanceof EndableAction))
                 continue;
+
+            // Has this action finished since we started?
+            if(action.hasFinished())
+                continue;
+            count++;
             EndableAction endableAction = (EndableAction) action;
             endableAction.abort(reason);
         }
+        log("Aborted %d EndableActions", count);
     }
 }

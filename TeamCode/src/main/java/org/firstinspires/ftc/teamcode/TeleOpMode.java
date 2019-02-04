@@ -39,7 +39,7 @@ abstract class TeleOpMode extends BaseLinearOpMode {
     // Called over and over until stop button is pressed
     public void teleOpLoop()
     {
-        if(gamepad1.x.isPressed)
+        if(gamepad1.x.onPress)
             Scheduler.get().abortAllEndableActions("Gamepad1 aborting actions");
 
 
@@ -73,20 +73,20 @@ abstract class TeleOpMode extends BaseLinearOpMode {
             robot.reverseRobotOrientation();
 
         if(gamepad2.right_bumper.isPressed)
-            robot.setArmExtensionPower(-gamepad2.left_stick_y / 4);
+            robot.setArmExtensionPower_raw(-gamepad2.left_stick_y / 4);
         else
-            robot.setArmExtensionPower(-gamepad2.left_stick_y);
+            robot.setArmExtensionPower_raw(-gamepad2.left_stick_y);
 
-        robot.setSwingArmSpeed(-gamepad2.right_stick_y / 2);
+        robot.setSwingArmSpeed_raw(-gamepad2.right_stick_y / 2);
 
 
         double hookPower = 1;
         if(gamepad2.dpad_up.isPressed)
-            robot.setHookPower(hookPower);
+            robot.setHookPower_raw(hookPower);
         else if(gamepad2.dpad_down.isPressed)
-            robot.setHookPower(-hookPower);
+            robot.setHookPower_raw(-hookPower);
         else
-            robot.setHookPower(0);
+            robot.setHookPower_raw(0);
 
         if(gamepad1.right_bumper.onPress)
             robot.startSkoochingRight();

@@ -18,7 +18,7 @@ public class OngoingAction_CalibrateHook extends EndableAction
     {
         super.start();
         robot.hookSafetyIsDisabled=true;
-        robot.setHookPower(-0.15);
+        robot.setHookPower_raw(-0.15);
         return this;
     }
 

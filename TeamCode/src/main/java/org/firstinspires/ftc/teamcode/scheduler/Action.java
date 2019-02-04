@@ -52,12 +52,12 @@ public abstract class Action {
 
         this.label = safeStringFormat("%s(#%d)", name, actionID);
         if (parentAction == null){
-            ancesterLabels = name;
+            ancesterLabels = label;
             ancestryCount=0;
             messageIndentationString="";
         }
         else {
-            ancesterLabels = safeStringFormat("%s --> %s", parentAction.ancesterLabels, name);
+            ancesterLabels = safeStringFormat("%s --> %s", parentAction.ancesterLabels, label);
             parentAction.childActionCreated(this);
             ancestryCount = parentAction.ancestryCount + 1;
             messageIndentationString = parentAction.messageIndentationString + "  ";
@@ -123,10 +123,16 @@ public abstract class Action {
         return safeStringFormat("%d-%s%s", actionID, label, getTimingString());
     }
 
-    @Override
-    public String toString() {
+    public String toLongString()
+    {
         return safeStringFormat("%d-%s|%s|%s|%s",
                 actionID, fullDesc, getTimingString(), ancesterLabels, status);
+    }
+
+    @Override
+    public String toString()
+    {
+        return toLongString();
     }
 
     public void finish()

@@ -24,6 +24,6 @@ public class TankMode extends TeleOpMode
             robot.logChange("Driving power", "Full power");
 
 
-        robot.setDrivingPowers(powerLeft, powerRight);
+        robot.setDrivingPowers_raw(powerLeft, powerRight);
     }
 }

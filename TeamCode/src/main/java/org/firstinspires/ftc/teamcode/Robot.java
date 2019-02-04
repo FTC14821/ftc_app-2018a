@@ -188,7 +188,7 @@ public class Robot
         correctHeading = teamImu.getTotalDegreesTurned();
 
         setRobotOrientation(true);
-        stopWithoutBraking();
+        stopDrivingWheels_raw();
         setArmSpinServoPosition_raw(ARM_SPIN_SERVO_MIN_LOCATION);
 
         setupRobotTelemetry(telemetry);
@@ -245,10 +245,22 @@ public class Robot
     public String saveTelemetryData(String key, String valueFormat, Object... valueArgs)
     {
         String value = safeStringFormat(valueFormat, valueArgs);
-        latestTelemetryData.put(key, value);
-        lastTelemetryUpdateTime_ms = System.currentTimeMillis();
+        String oldValue = latestTelemetryData.get(key);
+
+        if ( oldValue == null || !value.equals(oldValue))
+        {
+            latestTelemetryData.put(key, value);
+            lastTelemetryUpdateTime_ms = System.currentTimeMillis();
+        }
         return value;
     }
+
+    public void removeTelemetryData(String key)
+    {
+        latestTelemetryData.remove(key);
+        lastTelemetryUpdateTime_ms = System.currentTimeMillis();
+    }
+
 
 
     private void setupRobotTelemetry(Telemetry telemetry)
@@ -350,16 +362,18 @@ public class Robot
 
         if ( previousChangeMessage==null || !previousChangeMessage.equals(changeMessage) )
         {
-            log("Changing %s: %s", component, changeMessage);
+            log("Robot change: %s: %s (was %s)",
+                    component, changeMessage,
+                    previousChangeMessage==null ? "unknown" : previousChangeMessage);
             component2MostRecentChange.put(component, changeMessage);
         }
     }
 
-    public void stopWithoutBraking()
+    public void stopDrivingWheels_raw()
     {
         logChange("Driving", "Stopping");
-        setRightPower(0);
-        setLeftPower(0);
+        setRightPower_raw(0);
+        setLeftPower_raw(0);
     }
 
     public EndableAction startStopping()
@@ -372,8 +386,8 @@ public class Robot
             {
                 super.start();
                 setDrivingZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-                setRightPower(0);
-                setLeftPower(0);
+                setRightPower_raw(0);
+                setLeftPower_raw(0);
                 return this;
             }
 
@@ -388,27 +402,28 @@ public class Robot
                 }
                 else
                 {
-                    statusMessage.append(safeStringFormat("Robot is stopped... M0Speed=%d|M1Speed=%d", m0Speed, m1Speed ));
+                    statusMessage.append(safeStringFormat("Robot wheels have stopped... M0Speed=%d|M1Speed=%d", m0Speed, m1Speed ));
                     return true;
                 }
             }
 
             @Override
-            protected void cleanup(boolean actionWasCompleted)
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
             {
                 setDrivingZeroPowerBehavior(originalBehavior);
+                super.cleanup(actionWasCompletedSuccessfully);
             }
         }.start();
 
         return brakingAction;
     }
 
-    public void driveStraight(double power)
+    public void driveStraight_raw(double power)
     {
         logChange("Driving", "Straight(pow=%.2f)", power);
 
-        setLeftPower(power);
-        setRightPower(power);
+        setLeftPower_raw(power);
+        setRightPower_raw(power);
     }
 
     /**
@@ -416,18 +431,18 @@ public class Robot
      *
      * @param power (-1..1) negative means to the left
      */
-    public void spin(double power)
+    public void spin_raw(double power)
     {
         logChange("Driving", "Spin%s(%.2f)", power > 0 ? "Right" : "Left", power);
-        setLeftPower(power);
-        setRightPower(-power);
+        setLeftPower_raw(power);
+        setRightPower_raw(-power);
     }
 
-    public void setDrivingPowers(double leftPower, double rightPower)
+    public void setDrivingPowers_raw(double leftPower, double rightPower)
     {
         logChange("Driving","SetDrivingPowers(%.2f,%.2f)", leftPower, rightPower);
-        setLeftPower(leftPower);
-        setRightPower(rightPower);
+        setLeftPower_raw(leftPower);
+        setRightPower_raw(rightPower);
     }
 
     public DcMotor.ZeroPowerBehavior setDrivingZeroPowerBehavior(DcMotor.ZeroPowerBehavior behavior)
@@ -464,7 +479,7 @@ public class Robot
         if (!armSpinServoHasBeenSet && position != ARM_SPIN_INITIALIZE_LOCATION)
         {
             setArmSpinServoPosition_raw(ARM_SPIN_INITIALIZE_LOCATION);
-            Scheduler.get().sleep(500, "Waiting to get arm-spin to safe location");
+            Scheduler.get().sleep(100, "Waiting to get arm-spin_raw to safe location");
         }
 
         if (position < ARM_SPIN_SERVO_MIN_LOCATION)
@@ -476,9 +491,17 @@ public class Robot
         armSpinServoHasBeenSet=true;
     }
 
+    /**
+     *
+     * @return how many encoder clicks the drive motors have moved. Positive ==> Forward, as
+     * defined by the robot's orientation
+     */
 
     public int getWheelPosition() {
-        return M0.getCurrentPosition();
+        if (M0.getDirection() == DcMotor.Direction.FORWARD)
+            return M0.getCurrentPosition();
+        else
+            return -M0.getCurrentPosition();
     }
 
     /**
@@ -504,7 +527,7 @@ public class Robot
         getLeftMotor().setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
-    public void setHookPower(double power)
+    public void setHookPower_raw(double power)
     {
         logChange("HookMotor", "power(%.2f)", power);
 
@@ -514,7 +537,7 @@ public class Robot
     }
 
 
-    public void setArmExtensionPower(double power)
+    public void setArmExtensionPower_raw(double power)
     {
         logChange("ArmExtension", "power(%.2f)", power);
 
@@ -524,7 +547,7 @@ public class Robot
         }
     }
 
-    public void setSwingArmSpeed(double speed)
+    public void setSwingArmSpeed_raw(double speed)
     {
         logChange("ArmSwing", "speed(%.2f)", speed);
         armSwingMotor.setPower(speed);
@@ -545,7 +568,7 @@ public class Robot
         return zone;
     }
 
-    private void setLeftPower(double leftPower)
+    private void setLeftPower_raw(double leftPower)
     {
         logChange(safeStringFormat("Left(Port%d)MotorPower", getLeftMotor().getPortNumber()),
             "Power(%.2f)", leftPower);
@@ -553,7 +576,7 @@ public class Robot
         getLeftMotor().setPower(leftPower);
     }
 
-    private void setRightPower(double rightPower)
+    private void setRightPower_raw(double rightPower)
     {
         logChange(safeStringFormat("Right(Port%d)MotorPower", getRightMotor().getPortNumber()),
                 "Power(%.2f)", rightPower);
@@ -565,7 +588,7 @@ public class Robot
      * @param power    Positive power is forward, negative power is backwards (between -1, 1)
      * @param steering Positive steering is to the right, negative steering is to the left (between -1, 1)
      */
-    void setPowerSteering(double power, double steering)
+    void setPowerSteering_raw(double power, double steering)
     {
         logChange("Driving", "Steer(pow=%.2f, steering=%.2f)", power, steering);
 
@@ -583,8 +606,8 @@ public class Robot
             powerRight = power;
         }
 
-        setLeftPower(powerLeft);
-        setRightPower(powerRight);
+        setLeftPower_raw(powerLeft);
+        setRightPower_raw(powerRight);
     }
 
     public void trackMovements()
@@ -626,12 +649,12 @@ public class Robot
             if (Math.abs(previousHookPower) >= 0.25 && Math.abs(hookSpeed) < 10)
             {
                 log("EMERGENCY HOOK STOP: Power was %.2f, speed was %d", previousHookPower, hookSpeed);
-                setHookPower(0);
+                setHookPower_raw(0);
             }
             if (Math.abs(previousArmExtensionPower) >= 0.25 && Math.abs(armExtensionSpeed) < 10)
             {
                 log("EMERGENCY ARM EXTENSION STOP: Power was %.2f, speed was %d", previousArmExtensionPower, armExtensionSpeed);
-                setArmExtensionPower(0);
+                setArmExtensionPower_raw(0);
             }
         }
 
@@ -731,7 +754,7 @@ public class Robot
             {
                 super.start();
 
-                setHookPower(Math.abs(power));
+                setHookPower_raw(Math.abs(power));
                 return this;
             }
 
@@ -745,10 +768,10 @@ public class Robot
             }
 
             @Override
-            protected void cleanup(boolean actionWasCompleted)
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
             {
-                setHookPower(0);
-                super.cleanup(actionWasCompleted);
+                setHookPower_raw(0);
+                super.cleanup(actionWasCompletedSuccessfully);
             }
         }.start();
     }
@@ -763,7 +786,7 @@ public class Robot
                 {
                     super.start();
 
-                    setHookPower(-Math.abs(power));
+                    setHookPower_raw(-Math.abs(power));
                     return this;
                 }
 
@@ -777,10 +800,10 @@ public class Robot
                 }
 
                 @Override
-                protected void cleanup(boolean actionWasCompleted)
+                protected void cleanup(boolean actionWasCompletedSuccessfully)
                 {
-                    setHookPower(0);
-                    super.cleanup(actionWasCompleted);
+                    setHookPower_raw(0);
+                    super.cleanup(actionWasCompletedSuccessfully);
                 }
             }.start();
         }
@@ -814,11 +837,11 @@ public class Robot
             }
 
             @Override
-            protected void cleanup(boolean actionWasCompleted)
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
             {
-                stopWithoutBraking();
+                stopDrivingWheels_raw();
 
-                super.cleanup(actionWasCompleted);
+                super.cleanup(actionWasCompletedSuccessfully);
             }
 
             @Override
@@ -854,26 +877,26 @@ public class Robot
                 if ( headingError > 10 )
                     // Too far off course, need to stop and turn
                     // Use 0 degrees so turn will just turn to the correct place
-                    startTurningLeft(0, TURN_TYPE.SPIN);
+                    startTurningLeft(0, TURN_TYPE.SPIN).waitUntilFinished();
                 else if ( headingError < -10 )
-                    startTurningRight(0, TURN_TYPE.SPIN);
+                    startTurningRight(0, TURN_TYPE.SPIN).waitUntilFinished();
                 else
                 {
                     if (headingError > 0.0)
                     {
                         //Steer to the left
                         // PowerSteering takes negative steering to the left
-                        setPowerSteering(wheelPower, -0.05 * Math.abs(headingError));
+                        setPowerSteering_raw(wheelPower, -0.05 * Math.abs(headingError));
                     } else if (headingError < 0.0)
                     {
                         //Steer to the right
                         // PowerSteering takes positive steering to the right
 
-                        setPowerSteering(wheelPower, 0.05 * Math.abs(headingError));
+                        setPowerSteering_raw(wheelPower, 0.05 * Math.abs(headingError));
                     } else
                     {
                         // Go Straight
-                        driveStraight(wheelPower);
+                        driveStraight_raw(wheelPower);
                     }
                 }
             }
@@ -947,13 +970,13 @@ public class Robot
                 if ( headingError > 10 ) {
                     setStatus("Turning left because we're off by %.1f degrees (>10)", headingError);
                     // Use 0 degrees so turn will just turn to the correct place
-                    startTurningLeft(0, TURN_TYPE.SPIN);
+                    startTurningLeft(0, TURN_TYPE.SPIN).waitUntilFinished();
                 }
                 else if ( headingError < -10 ) {
                     setStatus("Turning right because we're off by %.1f degrees (<-10)", headingError);
 
                     // Use 0 degrees so turn will just turn to the correct place
-                    startTurningRight(0, TURN_TYPE.SPIN);
+                    startTurningRight(0, TURN_TYPE.SPIN).waitUntilFinished();
                 }
                 else
                 {
@@ -962,17 +985,27 @@ public class Robot
                     if (headingError > 0.0) {
                         //The current heading is too small so we turn to the right
                         // (opposite of inchMoveForward because we're going backwards)
-                        setPowerSteering(-wheelPower, 0.1 * Math.abs(headingError));
+                        setPowerSteering_raw(-wheelPower, 0.1 * Math.abs(headingError));
                     } else if (headingError < 0.0) {
                         //Current heading is too big, so we steer to the left (again since we're going backwards)
-                        setPowerSteering(-wheelPower, -0.1 * Math.abs(headingError));
+                        setPowerSteering_raw(-wheelPower, -0.1 * Math.abs(headingError));
                     } else {
                         // Go Straight
-                        driveStraight(-wheelPower);
+                        driveStraight_raw(-wheelPower);
                     }
                 }
 
             }
+
+
+            @Override
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
+            {
+                stopDrivingWheels_raw();
+
+                super.cleanup(actionWasCompletedSuccessfully);
+            }
+
         }.start();
     }
 
@@ -1009,13 +1042,14 @@ public class Robot
             }
 
             @Override
-            protected void cleanup(boolean actionWasCompleted)
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
             {
                 setDrivingMotorMode(originalMotorMode);
                 setDrivingZeroPowerBehavior(originalZeroPowerBehavior);
+                stopDrivingWheels_raw();
                 setStatus("Finished turning. Wheels stopped. Robot is %.1f degrees off of correct heading", getHeadingError());
 
-                super.cleanup(actionWasCompleted);
+                super.cleanup(actionWasCompletedSuccessfully);
             }
 
             @Override
@@ -1048,15 +1082,15 @@ public class Robot
                     setStatus("%.0f degrees to go. (slower turn)", degreesToGo);
 
                     if (turnType==TURN_TYPE.SPIN)
-                        spin(TURN_SLOWDOWN_POWER);
+                        spin_raw(TURN_SLOWDOWN_POWER);
                     else
-                        setDrivingPowers(0, TURN_SLOWDOWN_POWER);
+                        setDrivingPowers_raw(0, TURN_SLOWDOWN_POWER);
                 } else {
                     setStatus("%.0f degrees to go. (full speed)", degreesToGo);
                     if (turnType==TURN_TYPE.SPIN)
-                        spin(TURN_POWER);
+                        spin_raw(TURN_POWER);
                     else
-                        setDrivingPowers(0, TURN_POWER);
+                        setDrivingPowers_raw(0, TURN_POWER);
                 }
             }
         }.start();
@@ -1087,13 +1121,14 @@ public class Robot
             }
 
             @Override
-            protected void cleanup(boolean actionWasCompleted)
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
             {
                 setStatus("Finished turning. Starting to stop when robot is %.0f degrees off of correct heading", getHeadingError());
                 setDrivingMotorMode(originalMotorMode);
+                stopDrivingWheels_raw();
                 setStatus("Finished turning. Wheels stopped. Robot is %.0f degrees off of correct heading", getHeadingError());
 
-                super.cleanup(actionWasCompleted);
+                super.cleanup(actionWasCompletedSuccessfully);
             }
 
             @Override
@@ -1126,15 +1161,15 @@ public class Robot
                     setStatus("%.0f degrees to go. (slower turn)", degreesToGo);
 
                     if (turnType==TURN_TYPE.SPIN)
-                        spin(-TURN_SLOWDOWN_POWER);
+                        spin_raw(-TURN_SLOWDOWN_POWER);
                     else
-                        setDrivingPowers(-TURN_SLOWDOWN_POWER, 0);
+                        setDrivingPowers_raw(-TURN_SLOWDOWN_POWER, 0);
                 } else {
                     setStatus("%.0f degrees to go. (full speed)", degreesToGo);
                     if (turnType==TURN_TYPE.SPIN)
-                        spin(-TURN_POWER);
+                        spin_raw(-TURN_POWER);
                     else
-                        setDrivingPowers(-TURN_POWER, 0);
+                        setDrivingPowers_raw(-TURN_POWER, 0);
                 }
             }
         }.start();
@@ -1162,9 +1197,10 @@ public class Robot
             }
 
             @Override
-            protected void cleanup(boolean actionWasCompleted)
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
             {
-                stopWithoutBraking();
+                stopDrivingWheels_raw();
+                super.cleanup(actionWasCompletedSuccessfully);
             }
 
             @Override
@@ -1243,6 +1279,15 @@ public class Robot
             }
 
             @Override
+            protected void cleanup(boolean actionWasCompletedsSuccessfully)
+            {
+                setArmExtensionPower_raw(0);
+                setSwingArmSpeed_raw(0);
+                setHookPower_raw(0);
+                super.cleanup(actionWasCompletedsSuccessfully);
+            }
+
+            @Override
             public boolean isDone(StringBuilder statusMessage)
             {
                 return areChildrenDone(statusMessage);
@@ -1279,7 +1324,7 @@ public class Robot
             public EndableAction start()
             {
                 super.start();
-                setDrivingPowers(0.25, 0.25);
+                setDrivingPowers_raw(0.25, 0.25);
                 return this;
             }
 
@@ -1365,11 +1410,11 @@ public class Robot
             }
 
             @Override
-            protected void cleanup(boolean actionWasCompleted)
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
             {
                 armExtensionMotor.setPower(0);
                 armExtensionMotor.setMode(originalMode);
-                super.cleanup(actionWasCompleted);
+                super.cleanup(actionWasCompletedSuccessfully);
             }
 
             @Override

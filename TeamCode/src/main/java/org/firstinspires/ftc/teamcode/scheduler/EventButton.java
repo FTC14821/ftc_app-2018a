@@ -23,8 +23,15 @@ public class EventButton
         this.isPressed = isPressed;
 
         // Was there a change in state?
-        if (previousIsPressed != isPressed)
+        if (previousIsPressed == isPressed)
         {
+            // No change
+            onPress=false;
+            onRelease=false;
+        }
+        else
+        {
+            // Something changed
             if (isPressed)
             {
                 log("Button pressed:  %s", name);

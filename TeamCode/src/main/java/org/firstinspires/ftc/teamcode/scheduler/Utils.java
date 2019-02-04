@@ -9,7 +9,7 @@ public class Utils {
             return result;
         } catch (RuntimeException e) {
             //TODO: Logging
-            log("Formatting Error: format=%s: %s", format, e.getMessage());
+            log_raw("Formatting Error: format=%s: %s", format, e.getMessage());
             return String.format("Format Error: %s", format);
         }
     }

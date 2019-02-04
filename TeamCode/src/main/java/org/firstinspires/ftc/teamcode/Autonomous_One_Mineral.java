@@ -20,7 +20,7 @@ public class Autonomous_One_Mineral extends AutonomousOpMode
                 robot.startTurningRight(15).waitUntilFinished();
                 robot.startMovingHookDown(1);
                 robot.startInchMove( 5, 0.4).waitUntilFinished();
-                robot.stopWithoutBraking();
+                robot.stopDrivingWheels_raw();
                 robot.startTurningLeft(60).waitUntilFinished();
                 robot.startInchMove(30, 1).waitUntilFinished();
                 robot.startTurningLeft(90).waitUntilFinished();

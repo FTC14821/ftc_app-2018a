@@ -66,10 +66,10 @@ public class Autonomous_Depot extends AutonomousOpMode
         robot.startMovingHookUp( 1).waitUntilFinished();
         opmodeAction.setStatus("Landed");
 
-        robot.setDrivingPowers(0, -1);
+        robot.setDrivingPowers_raw(0, -1);
         robot.startMovingHookDown(1);
         teamSleep(1000, "Get unhooked");
-        robot.stopWithoutBraking();
+        robot.stopDrivingWheels_raw();
 
         teamSleep(750, "Getting hook out of way");
 
@@ -99,7 +99,7 @@ public class Autonomous_Depot extends AutonomousOpMode
         robot.startInchMove(40, 0.6).waitUntilFinished();
         robot.startTurningLeft(100).waitUntilFinished();
         robot.startInchMoveBack(12, MOVING_SPEED).waitUntilFinished();
-        robot.setSwingArmSpeed(1);
+        robot.setSwingArmSpeed_raw(1);
 
         action.finish();
     }
@@ -112,7 +112,7 @@ public class Autonomous_Depot extends AutonomousOpMode
         robot.startInchMove(42, 0.75).waitUntilFinished();
         robot.startTurningRight(180).waitUntilFinished();
         robot.startInchMove(5, MOVING_SPEED).waitUntilFinished();
-        robot.setSwingArmSpeed(1);
+        robot.setSwingArmSpeed_raw(1);
 
         action.finish();
     }
@@ -128,7 +128,7 @@ public class Autonomous_Depot extends AutonomousOpMode
         robot.startInchMove(40, 0.6).waitUntilFinished();
         robot.startTurningRight(100).waitUntilFinished();
         robot.startInchMoveBack(12, MOVING_SPEED).waitUntilFinished();
-        robot.setSwingArmSpeed(1);
+        robot.setSwingArmSpeed_raw(1);
 
         action.finish();
     }

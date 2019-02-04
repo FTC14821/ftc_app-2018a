@@ -23,7 +23,7 @@ public class encoderTest extends AutonomousOpMode
         startPosition = robot.getWheelPosition();
         stopPosition = startPosition + 4000;
 
-        robot.driveStraight(0.25);
+        robot.driveStraight_raw(0.25);
         while ( shouldOpModeKeepRunning() && robot.getWheelPosition() < stopPosition )
         {}
 

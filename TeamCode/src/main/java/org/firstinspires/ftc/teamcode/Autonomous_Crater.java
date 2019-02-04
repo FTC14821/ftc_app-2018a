@@ -64,10 +64,10 @@ public class Autonomous_Crater extends AutonomousOpMode
         robot.startMovingHookUp( 1);
         opmodeAction.setStatus("Landed");
 
-        robot.setDrivingPowers(0, -1);
+        robot.setDrivingPowers_raw(0, -1);
         robot.startMovingHookDown(1);
         teamSleep(1000, "Get unhooked");
-        robot.setDrivingPowers(0, 0);
+        robot.setDrivingPowers_raw(0, 0);
 
         teamSleep(750, "Getting hook out of way");
 
