@@ -17,6 +17,7 @@ public class Autonomous_Pacing extends AutonomousOpMode
                         @Override
                         protected void loop()
                         {
+                                log("Pacing.loop()");
                                 robot.startInchMove(70, 0.5).waitUntilFinished();
                                 robot.startTurningLeft(180).waitUntilFinished();
                         }

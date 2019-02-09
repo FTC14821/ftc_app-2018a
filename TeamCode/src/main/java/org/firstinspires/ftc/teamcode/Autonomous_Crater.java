@@ -46,7 +46,9 @@ public class Autonomous_Crater extends AutonomousOpMode
         if(robotVision.objectColorStringFromLeftToRight .equals("SS"))
             return 2;
         if(robotVision.objectColorStringFromLeftToRight .equals("S"))
-            return 2;
+            return 0;
+        if(robotVision.objectColorStringFromLeftToRight .equals("G"))
+            return 1;
         else
         {
             action.log("Vision timed out, returning default (%d)", resultIfTimeout);
@@ -61,14 +63,14 @@ public class Autonomous_Crater extends AutonomousOpMode
         opmodeAction.setStatus("Gold location: %d", goldLocation);
 
         robot.resetCorrectHeading("Perpendicular to lander");
-        robot.startMovingHookUp( 1);
+        robot.startMovingHookUp( 1).waitUntilFinished();
         opmodeAction.setStatus("Landed");
 
         robot.setDrivingPowers_raw(0, -1);
-        robot.startMovingHookDown(1);
         teamSleep(1000, "Get unhooked");
         robot.setDrivingPowers_raw(0, 0);
 
+        robot.startMovingHookDown(1);
         teamSleep(750, "Getting hook out of way");
 
         switch(goldLocation)

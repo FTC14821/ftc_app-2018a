@@ -53,7 +53,7 @@ import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
 public class RobotVision  {
     private static final double RECOGNITION_CONFIDENCE_STANDARD = 0.80;
 
-    public enum DETECTABLE_OBJECTS {GOLD, SILVER};
+    public enum DETECTABLE_OBJECTS {GOLD, SILVER}
 
     private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
     private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
@@ -125,7 +125,7 @@ public class RobotVision  {
 
     private void initTelemtry()
     {
-        robot.telemetry.addLine("Vision")
+        robot.visionLine
                 .addData("", new Func<String>() {
                     @Override
                     public String value() {
@@ -261,7 +261,7 @@ public class RobotVision  {
         VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
         parameters.vuforiaLicenseKey = VUFORIA_KEY;
-        parameters.cameraDirection = CameraDirection.FRONT;
+        parameters.cameraDirection = CameraDirection.BACK;
 
         //  Instantiate the Vuforia engine
         vuforia = ClassFactory.getInstance().createVuforia(parameters);

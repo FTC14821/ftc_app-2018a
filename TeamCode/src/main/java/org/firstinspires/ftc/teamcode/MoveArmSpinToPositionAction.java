@@ -1,11 +1,17 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+
 import org.firstinspires.ftc.teamcode.scheduler.EndableAction;
+import org.firstinspires.ftc.teamcode.scheduler.OngoingAction;
 
 import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
 
 public class MoveArmSpinToPositionAction extends EndableAction
 {
+    Robot robot = Robot.get();
+
     private final double desiredArmSpinLocation;
 
     public MoveArmSpinToPositionAction(double desiredArmSpinLocation)
@@ -28,16 +34,34 @@ public class MoveArmSpinToPositionAction extends EndableAction
     }
 
     @Override
+    public boolean isUsingDcMotor(DcMotor motor)
+    {
+        if(motor == robot.armSwingMotor)
+            return true;
+        else
+            return super.isUsingDcMotor(motor);
+    }
+
+    @Override
+    public boolean isUsingServo(Servo servo)
+    {
+        if(servo == robot.armSpinServo)
+                return true;
+        else
+            return super.isUsingServo(servo);
+    }
+
+    @Override
     public boolean isDone(StringBuilder statusMessage)
     {
-        statusMessage.append(safeStringFormat("%d --> %d", Robot.get().armSpinServo.getPosition(), desiredArmSpinLocation));
-        return Robot.get().armSpinServo.getPosition() == desiredArmSpinLocation;
+        statusMessage.append(safeStringFormat("Still to go: %.2f --> %.2f", Robot.get().armSpinServo.getPosition(), desiredArmSpinLocation));
+        return robot.armSpinServo.getPosition() == desiredArmSpinLocation;
     }
 
     @Override
     public void loop()
     {
-        double currentPosition = Robot.get().armSpinServo.getPosition();
+        double currentPosition = robot.armSpinServo.getPosition();
         double movementLeft = Math.abs(currentPosition - desiredArmSpinLocation);
 
         if ( movementLeft == 0 ) {
@@ -55,6 +79,6 @@ public class MoveArmSpinToPositionAction extends EndableAction
         }
 
         log("Setting Arm Spin position to %.2f", newPosition);
-        Robot.get().armSpinServo.setPosition(newPosition);
+        robot.setArmSpinServoPosition_raw(newPosition);
     }
 }

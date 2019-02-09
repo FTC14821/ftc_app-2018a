@@ -49,10 +49,10 @@ public abstract class EndableAction extends OngoingAction{
     {
         String reason =safeStringFormat(reasonFormat, reasonArgs);
 
-        log("Action aborted: %s. Stopping any children and then myself", reason);
+        Robot.get().alert("Action aborted: %s. Stopping any children and then myself", reason);
 
         endedSuccessfully = false;
-        wasAborted =true;
+        wasAborted = true;
 
         // Abort children first
         for(Action childAction : childActions)

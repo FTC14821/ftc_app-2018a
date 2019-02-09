@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.os.DropBoxManager;
+
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -11,14 +14,17 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.scheduler.Action;
 import org.firstinspires.ftc.teamcode.scheduler.EndableAction;
 import org.firstinspires.ftc.teamcode.scheduler.ImmediateAction;
+import org.firstinspires.ftc.teamcode.scheduler.OngoingAction;
 import org.firstinspires.ftc.teamcode.scheduler.RepeatedAction;
 import org.firstinspires.ftc.teamcode.scheduler.Scheduler;
 
 import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
 import static org.firstinspires.ftc.teamcode.scheduler.Utils.log;
 
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 public class Robot
@@ -31,33 +37,37 @@ public class Robot
     public static final double TURN_POWER = 0.35;
     public static final double TURN_SLOWDOWN_POWER = 0.05;
     public static final int TURN_SLOWDOWN_DEGREES = 10;
-    // Max height of hook (hook0 + MAX_HOOK_DISTANCE)
-    public static final int MAX_HOOK_DISTANCE = 27500;
-    public static final int MAX_SWING_ARM_DISTANCE = 2200;
-    public static final int MAX_ARM_EXTENSION_DISTANCE = 12800;
+    public static final int MAX_HOOK_DISTANCE = 10400;
 
+    public static final int MIN_SWING_ARM_DISTANCE = 100;
+    public static final int MAX_SWING_ARM_DISTANCE = 7536;
+
+    public static final int MIN_ARM_EXTENSION_DISTANCE = 500;
+    public static final int MAX_ARM_EXTENSION_DISTANCE = 13600;
+
+    public static final double BOX_TILT_SERVO_INIT_LOCATION = 0.50;
 
     public static final double ARM_SPIN_SERVO_MIN_LOCATION = 0.01;
-    public static final double ARM_SPIN_SERVO_MAX_LOCATION = 0.75;
+    public static final double ARM_SPIN_SERVO_MAX_LOCATION = 1.00;
+    public static final double MAX_ARM_SPIN_SERVO_CHANGE = 0.03;
+    public static final double ARM_SPIN_INITIALIZE_LOCATION = 0.15;
 
-    public static final int ARM_SWING_DOWN_IN_FRONT = 0;
-    public static final int ARM_SWING_DOWN_IN_BACK = -7777;
-    public static final int ARM_SWING_UP = -4324;
-    public static final int ARM_EXTENTION_IN = 0;
-    public static final int ARM_EXTENTION_OUT = MAX_ARM_EXTENSION_DISTANCE;
-    public static final double ARM_SPIN_FOLDED_IN = 0;
-    public static final double ARM_SPIN_STRAIGHT = .56;
-    public static final double ARM_SPIN_TILTED = .46;
-    public static final double MAX_ARM_SPIN_SERVO_CHANGE = 0.05;
-    private static final double ARM_SPIN_INITIALIZE_LOCATION = 0.2;
+
+    private static final int MAX_ALERTS=2;
+    public Telemetry.Line visionLine;
+    private LinkedList<String> alerts = new LinkedList<>();
+    private int alertCounter = 0;
 
     public static enum TURN_TYPE {SPIN, PIVOT};
 
     public static enum ARM_LOCATION {
-        FOLDED(ARM_SWING_DOWN_IN_FRONT,ARM_SPIN_FOLDED_IN, ARM_EXTENTION_IN, 0),
-        CRATER(ARM_SWING_DOWN_IN_BACK, ARM_SPIN_STRAIGHT, ARM_EXTENTION_OUT, 0),
-        DUMP_GOLD(ARM_SWING_UP, ARM_SPIN_STRAIGHT, ARM_EXTENTION_OUT, 0),
-        DUMP_SILVER(ARM_SWING_UP, ARM_SPIN_TILTED, ARM_EXTENTION_OUT, 0);
+        FOLDED(0, 0, 0, 0.9),
+        FRONT_LEVEL(1030, 0.36, 0, 0.9),
+        BACK_LEVEL(6350, 0.36, 0, 0.5),
+        MINING(7536, 0.75, 0, 0.6),
+        FAR_MINING(7013, 0.75, MAX_ARM_EXTENSION_DISTANCE, 0.6),
+        SILVER_DUMP(2600, 0.75, 0, 0.5),
+        GOLD_DUMP(2285, 0.82, MAX_ARM_EXTENSION_DISTANCE, 0.5);
 
         int armSwingMotorLocation;
         double armSpinServoLocation;
@@ -69,10 +79,10 @@ public class Robot
                             int armExtensionMotorLocation,
                             double boxTiltServoLocation)
         {
-            this.armSwingMotorLocation=armSwingMotorLocation;
-            this.armSpinServoLocation=armSpinServoLocation;
+            this.armSwingMotorLocation = armSwingMotorLocation;
+            this.armSpinServoLocation = armSpinServoLocation;
             this.armExtensionMotorLocation = armExtensionMotorLocation;
-            this.boxTiltServoLocation=boxTiltServoLocation;
+            this.boxTiltServoLocation = boxTiltServoLocation;
         }
     }
 
@@ -93,8 +103,8 @@ public class Robot
     final Servo boxTiltServo;
     public boolean boxTiltServoHasBeenSet=false;
 
-    final Servo leftBoxServo;
-    final Servo rightBoxServo;
+    final CRServo leftBoxServo;
+    final CRServo rightBoxServo;
 
     final TouchSensor armSwingFrontLimit;
     final TouchSensor limitSwitch1;
@@ -166,21 +176,23 @@ public class Robot
 
         armSpinServo = hardwareMap.servo.get("ArmSpinServo");
         boxTiltServo = hardwareMap.servo.get("BoxTiltServo");
-        leftBoxServo = hardwareMap.servo.get("LeftBoxServo");
-        rightBoxServo = hardwareMap.servo.get("RightBoxServo");
+        leftBoxServo = hardwareMap.crservo.get("LeftBoxServo");
+        leftBoxServo.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightBoxServo = hardwareMap.crservo.get("RightBoxServo");
+        rightBoxServo.setDirection(DcMotorSimple.Direction.REVERSE);
 
         armSwingFrontLimit = hardwareMap.touchSensor.get("ArmSwingFrontLimit");
         limitSwitch1 = hardwareMap.touchSensor.get("LimitSwitch1");
 
         armExtensionMotor = hardwareMap.dcMotor.get("ArmExtensionMotor");
         armExtensionMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armExtensionMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         hookMotor = hardwareMap.dcMotor.get("HookMotor");
         hookMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         armSwingMotor = hardwareMap.dcMotor.get("SwingMotor");
         armSwingMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        armSwingMotor.setDirection(DcMotor.Direction.REVERSE);
         armSwingMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         teamImu = new TeamImu(hardwareMap, telemetry);
@@ -189,7 +201,6 @@ public class Robot
 
         setRobotOrientation(true);
         stopDrivingWheels_raw();
-        setArmSpinServoPosition_raw(ARM_SPIN_SERVO_MIN_LOCATION);
 
         setupRobotTelemetry(telemetry);
 
@@ -228,18 +239,37 @@ public class Robot
 
     private void telemetryLoop()
     {
-        telemetry.update();
-
-        // Has telemetry changed since we last logged it?
-        if (lastTelemetryUpdateTime_ms==0 || lastTelemetryUpdateTime_ms>lastTelemetryLoggingTime_ms)
+        try
         {
-            lastTelemetryLoggingTime_ms = System.currentTimeMillis();
-            for (Map.Entry entry : latestTelemetryData.entrySet())
+            telemetry.update();
+
+            // Has telemetry changed since we last logged it?
+            if(lastTelemetryUpdateTime_ms == 0 || lastTelemetryUpdateTime_ms > lastTelemetryLoggingTime_ms)
             {
-                log("%12s: %s", entry.getKey(), entry.getValue());
+                lastTelemetryLoggingTime_ms = System.currentTimeMillis();
+                for (Map.Entry entry : latestTelemetryData.entrySet())
+                {
+                    log("%12s: %s", entry.getKey(), entry.getValue());
+                }
             }
+
+        } catch (ConcurrentModificationException e)
+        {
+            // Ignore it
         }
     }
+
+    public void alert(String alertFormat, Object...alertArgs)
+    {
+        String alert = safeStringFormat("%d: %s", ++alertCounter, safeStringFormat(alertFormat, alertArgs));
+        alerts.add(alert);
+        log("ALERT: %s", alert);
+
+        // Remove first message if there are too many
+        while ( alerts.size() > MAX_ALERTS )
+            alerts.remove(0);
+    }
+
 
 
     public String saveTelemetryData(String key, String valueFormat, Object... valueArgs)
@@ -266,13 +296,39 @@ public class Robot
     private void setupRobotTelemetry(Telemetry telemetry)
     {
         telemetry.addLine("Robot: ")
-                .addData("Orientation", new Func<String>() {
+                .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return saveTelemetryData("Orientation", motorsInFront ? "MotorsFront" : "MotorsBack");
+                        return saveTelemetryData("Robot",
+                                "Orientation: %s|Arm: %s",
+                                motorsInFront ? "MotorsFront" : "MotorsBack",
+                                currentArmLocation);
                     }
                 })
         ;
+
+        telemetry.addLine("Alert1")
+                .addData("", new Func<String>()
+                {
+                    @Override
+                    public String value()
+                    {
+                        return saveTelemetryData("Alert1",
+                                alerts.size()<1 ? "none" : alerts.get(0));
+                    }
+                });
+        telemetry.addLine("Alert2")
+                .addData("", new Func<String>()
+                {
+                    @Override
+                    public String value()
+                    {
+                        return saveTelemetryData("Alert2",
+                                alerts.size()<2 ? "none" : alerts.get(1));
+                    }
+                });
+
+        visionLine = telemetry.addLine("Vision");
 
         telemetry.addLine("Heading: ")
                 .addData("", new Func<String>() {
@@ -283,15 +339,6 @@ public class Robot
                                 correctHeading,
                                 getHeadingError());
                     }});
-
-        telemetry.addLine("Touch Sensors: ")
-                .addData("", new Func<String>() {
-                    @Override
-                    public String value() {
-                        return saveTelemetryData("Touch sensors","|ArmSwingLimit %s|",
-                                armSwingFrontLimit.isPressed() ? "Pressed" : "Not Pressed"); }
-
-                });
 
         telemetry.addLine("Left: ")
                 .addData("", new Func<String>() {
@@ -315,16 +362,25 @@ public class Robot
                                 getRightMotor().getTargetPosition(),
                                 getRightMotor() == M0 ? "M0" : "M1");
                     }});
-        telemetry.addLine("ArmServo: ")
+        telemetry.addLine("ArmServos: ")
                 .addData("", new Func<String>() {
                     @Override
                     public String value() {
-                        return saveTelemetryData("ArmServos", "|ArmSpin=%.2f|BoxTilt=+%.2f|LeftIntakeServo=%+.1f|RightIntakeServo=%+.1f|",
+                        return saveTelemetryData("ArmServos", "|ArmSpin=%.2f|BoxTilt=+%.2f|LeftBox=%+.1f|RightBox=%+.1f|",
                                 armSpinServo.getPosition(),
                                 boxTiltServo.getPosition(),
-                                leftBoxServo.getPosition(),
-                                rightBoxServo.getPosition());
+                                leftBoxServo.getPower(),
+                                rightBoxServo.getPower());
                     }});
+
+        telemetry.addLine("Touch Sensors: ")
+                .addData("", new Func<String>() {
+                    @Override
+                    public String value() {
+                        return saveTelemetryData("Touch sensors","|ArmSwingLimit %s|",
+                                armSwingFrontLimit.isPressed() ? "Pressed" : "Not Pressed"); }
+
+                });
 
         telemetry.addLine("Hook: ")
                 .addData("", new Func<String>() {
@@ -352,6 +408,7 @@ public class Robot
                                 armExtensionMotor.getPower(), armExtensionSpeed, armExtensionMotor.getCurrentPosition()
                         );
                     }});
+
     }
 
 
@@ -375,6 +432,18 @@ public class Robot
         setRightPower_raw(0);
         setLeftPower_raw(0);
     }
+
+    public void stopDrivingWheels_teleop()
+    {
+        if (Scheduler.get().isDcMotorBusy(getLeftMotor()) || Scheduler.get().isDcMotorBusy(getRightMotor()))
+        {
+            alert("Ignoring stopDrivingWheels_teleop while motor(s) are busy");
+            return;
+        }
+
+        stopDrivingWheels_raw();
+    }
+
 
     public EndableAction startStopping()
     {
@@ -418,6 +487,18 @@ public class Robot
         return brakingAction;
     }
 
+
+    public void driveStraight_teleop(double power)
+    {
+        if (Scheduler.get().isDcMotorBusy(getLeftMotor()) || Scheduler.get().isDcMotorBusy(getRightMotor()))
+        {
+            if (Math.abs(power)>0.05)
+                alert("Ignoring driveStraight_teleop while motor(s) are busy");
+            return;
+        }
+
+        driveStraight_raw(power);
+    }
     public void driveStraight_raw(double power)
     {
         logChange("Driving", "Straight(pow=%.2f)", power);
@@ -437,12 +518,35 @@ public class Robot
         setLeftPower_raw(power);
         setRightPower_raw(-power);
     }
+    public void spin_teleop(double power)
+    {
+        if (Scheduler.get().isDcMotorBusy(getLeftMotor()) || Scheduler.get().isDcMotorBusy(getRightMotor()))
+        {
+            if (Math.abs(power)>0.05)
+                alert("Ignoring spin_teleop while motor(s) are busy");
+            return;
+        }
+
+        spin_raw(power);
+    }
+
 
     public void setDrivingPowers_raw(double leftPower, double rightPower)
     {
         logChange("Driving","SetDrivingPowers(%.2f,%.2f)", leftPower, rightPower);
         setLeftPower_raw(leftPower);
         setRightPower_raw(rightPower);
+    }
+    public void setDrivingPowers_teleop(double leftPower, double rightPower)
+    {
+        if (Scheduler.get().isDcMotorBusy(getLeftMotor()) || Scheduler.get().isDcMotorBusy(getRightMotor()))
+        {
+            if (Math.abs(leftPower)>0.05 || Math.abs(rightPower)>0.05)
+                alert("Ignoring setDrivingPowers_teleop while motor(s) are busy");
+            return;
+        }
+
+        setDrivingPowers_raw(leftPower, rightPower);
     }
 
     public DcMotor.ZeroPowerBehavior setDrivingZeroPowerBehavior(DcMotor.ZeroPowerBehavior behavior)
@@ -490,7 +594,96 @@ public class Robot
         armSpinServo.setPosition(position);
         armSpinServoHasBeenSet=true;
     }
+    public void setArmSpinServoPosition_teleop(double position)
+    {
+        if (Scheduler.get().isServoBusy(armSpinServo))
+        {
+            alert("Ignoring setArmSpinServoPosition_teleop while servo(s) are busy");
+            return;
+        }
 
+        setArmSpinServoPosition_raw(position);
+    }
+
+    public void setBoxTiltServoPosition_raw(double position)
+    {
+        //Health and safety wants to know your location
+        if(position < 0.5)
+            position = 0.5;
+        if(position > 1.0)
+            position = 1.0;
+
+        logChange("BoxTiltServo", "Position(%.2f)", position);
+
+        boxTiltServo.setPosition(position);
+    }
+    public void setBoxTiltServoPosition_teleop(double position)
+    {
+        if (Scheduler.get().isServoBusy(boxTiltServo))
+        {
+            alert("Ignoring setBoxTiltServoPosition_teleop while servo(s) are busy");
+            return;
+        }
+
+        setBoxTiltServoPosition_raw(position);
+    }
+
+    public boolean isLeftBoxServoOn()
+    {
+        return (leftBoxServo.getPower()!=0);
+    }
+
+    public boolean isRightBoxServoOn()
+    {
+        return (rightBoxServo.getPower()!=0);
+    }
+
+    public void setLeftBoxServo_raw(boolean onOff)
+    {
+        double power = onOff ? 1 : 0;
+        logChange("LeftBoxServo", "%s(%.1f)", onOff ? "ON" : "OFF", power);
+
+        if(onOff)
+            leftBoxServo.setPower(1);
+        else
+            leftBoxServo.setPower(0);
+    }
+
+    public void setLeftBoxServo_teleop(boolean onOff)
+    {
+        if (Scheduler.get().isServoBusy(leftBoxServo))
+        {
+            alert("Ignoring setLeftBoxServo_teleop while servo(s) are busy");
+            return;
+        }
+
+        setLeftBoxServo_raw(onOff);
+
+    }
+
+    public void setRightBoxServo_raw(boolean onOff)
+    {
+        double power = onOff ? 1 : 0;
+        logChange("RightBoxServo", "%s(%.1f)", onOff ? "ON" : "OFF", power);
+        if(onOff)
+            rightBoxServo.setPower(1);
+        else
+            rightBoxServo.setPower(0);
+    }
+
+    public void setRightBoxServo_teleop(boolean onOff)
+    {
+        if (Scheduler.get().isServoBusy(rightBoxServo))
+        {
+            alert("Ignoring setRightBoxServo_teleop while servo(s) are busy");
+            return;
+        }
+
+        setRightBoxServo_raw(onOff);
+
+    }
+
+    
     /**
      *
      * @return how many encoder clicks the drive motors have moved. Positive ==> Forward, as
@@ -537,21 +730,70 @@ public class Robot
     }
 
 
+    public void setHookPower_teleop(double power)
+    {
+        if (Scheduler.get().isDcMotorBusy(hookMotor))
+        {
+            if (Math.abs(power)>0.05)
+                alert("Ignoring setHookPower_teleop while motor(s) are busy");
+            return;
+        }
+
+        setHookPower_raw(power);
+    }
+
+
+
+
     public void setArmExtensionPower_raw(double power)
     {
-        logChange("ArmExtension", "power(%.2f)", power);
-
         if(isArmExtensionPowerOK(power))
         {
+            logChange("ArmExtension", "power(%.2f)", power);
             armExtensionMotor.setPower(power);
+        }
+        else
+        {
+            alert("Ignoring unsafe arm-extension power");
         }
     }
 
+    public void setArmExtensionPower_teleop(double power)
+    {
+        if (Scheduler.get().isDcMotorBusy(armExtensionMotor))
+        {
+            if (Math.abs(power)>0.05)
+                alert("Ignoring setArmExtensionPower_teleop while motor(s) are busy");
+            return;
+        }
+
+        setArmExtensionPower_raw(power);
+    }
+
+
     public void setSwingArmSpeed_raw(double speed)
     {
-        logChange("ArmSwing", "speed(%.2f)", speed);
-        armSwingMotor.setPower(speed);
+        if (isSwingArmPowerOK(speed))
+        {
+            logChange("ArmSwing", "speed(%.2f)", speed);
+            armSwingMotor.setPower(speed);
+        }
+        else
+            alert("Ignoring unsafe arm-swing speed");
     }
+
+    public void setSwingArmSpeed_teleop(double power)
+    {
+        if (Scheduler.get().isDcMotorBusy(armSwingMotor))
+        {
+            if (Math.abs(power)>0.05)
+                alert("Ignoring setSwingArmSpeed_teleop while motor(s) are busy");
+            return;
+        }
+
+        setSwingArmSpeed_raw(power);
+    }
+
 
 
     public int getArmSwingZone()
@@ -576,6 +818,21 @@ public class Robot
         getLeftMotor().setPower(leftPower);
     }
 
+
+    public void setLeftPower_teleop(double power)
+    {
+        if (Scheduler.get().isDcMotorBusy(getLeftMotor()))
+        {
+            if (Math.abs(power)>0.05)
+                alert("Ignoring setLeftPower_raw while motor(s) are busy");
+            return;
+        }
+
+        setLeftPower_raw(power);
+    }
+
+
+
     private void setRightPower_raw(double rightPower)
     {
         logChange(safeStringFormat("Right(Port%d)MotorPower", getRightMotor().getPortNumber()),
@@ -583,6 +840,18 @@ public class Robot
 
         getRightMotor().setPower(rightPower);
     }
+    public void setRightPower_teleop(double power)
+    {
+        if (Scheduler.get().isDcMotorBusy(getRightMotor()))
+        {
+            if (Math.abs(power)>0.05)
+                alert("Ignoring setRightPower_raw while motor(s) are busy");
+            return;
+        }
+
+        setRightPower_raw(power);
+    }
+
 
     /**
      * @param power    Positive power is forward, negative power is backwards (between -1, 1)
@@ -609,6 +878,19 @@ public class Robot
         setLeftPower_raw(powerLeft);
         setRightPower_raw(powerRight);
     }
+
+    public void setPowerSteering_teleop(double power, double steering)
+    {
+        if (Scheduler.get().isDcMotorBusy(getLeftMotor()) || Scheduler.get().isDcMotorBusy(getRightMotor()))
+        {
+            if (Math.abs(power)>0.05)
+                alert("Ignoring setPowerSteering_teleop while motor(s) are busy");
+            return;
+        }
+
+        setPowerSteering_raw(power, steering);
+    }
+
 
     public void trackMovements()
     {
@@ -642,33 +924,22 @@ public class Robot
     // Protect robot
     public void healthCheck()
     {
-        if(opMode instanceof TeleOpMode)
-        {
-            // Stop some motors that are getting power but are not moving
-
-            if (Math.abs(previousHookPower) >= 0.25 && Math.abs(hookSpeed) < 10)
-            {
-                log("EMERGENCY HOOK STOP: Power was %.2f, speed was %d", previousHookPower, hookSpeed);
-                setHookPower_raw(0);
-            }
-            if (Math.abs(previousArmExtensionPower) >= 0.25 && Math.abs(armExtensionSpeed) < 10)
-            {
-                log("EMERGENCY ARM EXTENSION STOP: Power was %.2f, speed was %d", previousArmExtensionPower, armExtensionSpeed);
-                setArmExtensionPower_raw(0);
-            }
-        }
-
-
         if (!isArmExtensionPowerOK(armExtensionMotor.getPower()))
         {
-            log("Stopping armExtension motor");
-            armExtensionMotor.setPower(0);
+            alert("Stopping armExtension motor");
+            setArmExtensionPower_raw(0);
         }
 
         if (!isHookPowerOK(hookMotor.getPower()))
         {
-            log("Stopping hook motor");
-            hookMotor.setPower(0);
+            alert("Stopping hook motor");
+            setHookPower_raw(0);
+        }
+
+        if (!isSwingArmPowerOK(armSwingMotor.getPower()))
+        {
+            alert("Stopping armSwing motor");
+            setSwingArmSpeed_raw(0);
         }
     }
 
@@ -685,7 +956,7 @@ public class Robot
         else if (hookMotor.getCurrentPosition() >  MAX_HOOK_DISTANCE && powerToCheck > 0) {
             problemReason = String.format("Hook power %f > 0 and hook too high (%d > %d)", powerToCheck,
                     hookMotor.getCurrentPosition(),  MAX_HOOK_DISTANCE);
-        } else if (hookMotor.getCurrentPosition() < 0 && powerToCheck < 0) {
+        } else if (hookMotor.getCurrentPosition() < 300 && powerToCheck < 0) {
             problemReason = String.format("Hook power %f < 0 and hook too low (%d < %d)", powerToCheck,
                     hookMotor.getCurrentPosition(), 0 );
         }
@@ -700,25 +971,25 @@ public class Robot
 
     private boolean isSwingArmPowerOK(double powerToCheck)
     {
-        boolean result;
+        String problem=null;
 
         if(allSafetysAreDisabled)
-            result = true;
+            problem=null;
         else if ( armSwingSafetyIsDisabled)
-            result = true;
-
-        else if (armSwingMotor.getCurrentPosition() >  MAX_SWING_ARM_DISTANCE && powerToCheck > 0) {
-            result = false;
-        } else if (armSwingMotor.getCurrentPosition() < 0 && powerToCheck < 0) {
-            result = false;
-        }
+            problem=null;
+        else if (armSwingFrontLimit.isPressed() && powerToCheck<0)
+            problem="Limit switch";
+        else if (armSwingMotor.getCurrentPosition() >  MAX_SWING_ARM_DISTANCE && powerToCheck > 0)
+            problem="Too far back";
+        else if (armSwingMotor.getCurrentPosition() < MIN_SWING_ARM_DISTANCE && powerToCheck < 0)
+            problem="Too far forward";
         else
-            result = true;
+            problem=null;
 
-        if(!result)
-            log("Swing arm power %.2f IS NOT OKAY at position %d", powerToCheck, armSwingMotor.getCurrentPosition());
+        if(problem!=null)
+            log("Swing arm power %.2f IS NOT OKAY at position %d: %s", powerToCheck, armSwingMotor.getCurrentPosition(), problem);
 
-        return result;
+        return problem==null;
     }
 
     private boolean isArmExtensionPowerOK(double powerToCheck)
@@ -727,27 +998,25 @@ public class Robot
 
         if(allSafetysAreDisabled)
             result = true;
-        else if ( armExtensionSafetyIsDisabled )
+        else if(armExtensionSafetyIsDisabled)
             result = true;
 
-        else if (armExtensionMotor.getCurrentPosition() > MAX_ARM_EXTENSION_DISTANCE && powerToCheck > 0) {
+        else if(armExtensionMotor.getCurrentPosition() > MAX_ARM_EXTENSION_DISTANCE && powerToCheck > 0)
             result = false;
-        } else if (armExtensionMotor.getCurrentPosition() < 0 && powerToCheck < 0) {
+        else if(armExtensionMotor.getCurrentPosition() < MIN_ARM_EXTENSION_DISTANCE && powerToCheck < 0)
             result = false;
-        }
         else
             result = true;
 
         if(!result)
-            log("Arm extension power" +
-                    " %.2f IS NOT OKAY at position %d", powerToCheck, armExtensionMotor.getCurrentPosition());
+            log("Arm extension power %.2f IS NOT OKAY at position %d", powerToCheck, armExtensionMotor.getCurrentPosition());
 
         return result;
     }
 
     public EndableAction startMovingHookUp(final double power)
     {
-        return new EndableAction(10000,"MoveHookUp", "HookUp(pow=%.2f)", power)
+        return new EndableAction("MoveHookUp", "HookUp(pow=%.2f)", power)
         {
             @Override
             public EndableAction start()
@@ -764,7 +1033,8 @@ public class Robot
                 statusMessage.append(safeStringFormat("HookMotor Power=%.2f, Position=%d, Speed=%d",
                     hookMotor.getPower(), hookMotor.getCurrentPosition(), hookSpeed));
 
-                return hookMotor.getPower() != 0;
+                // Has the robot health-check turned off the motor?
+                return hookMotor.getPower() == 0;
             }
 
             @Override
@@ -779,7 +1049,7 @@ public class Robot
     public EndableAction startMovingHookDown(final double power)
     {
         {
-            return new EndableAction(10000,"MoveHookDown", "HookDown(pow=%.2f)", power)
+            return new EndableAction("MoveHookDown", "HookDown(pow=%.2f)", power)
             {
                 @Override
                 public EndableAction start()
@@ -796,7 +1066,8 @@ public class Robot
                     statusMessage.append(safeStringFormat("HookMotor Power=%.2f, Position=%d, Speed=%d",
                             hookMotor.getPower(), hookMotor.getCurrentPosition(), hookSpeed));
 
-                    return hookMotor.getPower() != 0;
+                    // Has the robot health-check turned off the motor?
+                    return hookMotor.getPower() == 0;
                 }
 
                 @Override
@@ -1268,28 +1539,47 @@ public class Robot
     {
         return new EndableAction("CalibrateEverything")
         {
+            EndableAction armExtension, armSwing, hook;
+
             @Override
             public EndableAction start()
             {
                 super.start();
-                new OngoingAction_CalibrateArmExtension().start();
-                new OngoingAction_CalibrateArmSwing().start();
-                new OngoingAction_CalibrateHook().start();
+                armExtension = new OngoingAction_CalibrateArmExtension().start();
+                armSwing = new OngoingAction_CalibrateArmSwing().start();
+                hook = new OngoingAction_CalibrateHook().start();
                 return this;
             }
 
             @Override
-            protected void cleanup(boolean actionWasCompletedsSuccessfully)
+            protected void cleanup(boolean actionWasCompletedSuccessfully)
             {
-                setArmExtensionPower_raw(0);
-                setSwingArmSpeed_raw(0);
-                setHookPower_raw(0);
-                super.cleanup(actionWasCompletedsSuccessfully);
+                if(!(armExtension.hasFinished()))
+                    armExtension.abort("startCalibratingEverything was aborted");
+                if(!(armSwing.hasFinished()))
+                    armSwing.abort("startCalibratingEverything was aborted");
+                if(!(hook.hasFinished()))
+                    hook.abort("startCalibratingEverything was aborted");
+
+                if(actionWasCompletedSuccessfully)
+                {
+                    boxTiltServo.setPosition(ARM_LOCATION.FOLDED.boxTiltServoLocation);
+                    armSpinServo.setPosition(ARM_LOCATION.FOLDED.armSpinServoLocation);
+                    currentArmLocation = ARM_LOCATION.FOLDED;
+                }
+                super.cleanup(actionWasCompletedSuccessfully);
             }
 
             @Override
             public boolean isDone(StringBuilder statusMessage)
             {
+                if(!(armExtension.hasFinished()))
+                    return false;
+                if(!(armSwing.hasFinished()))
+                    return false;
+                if(!(hook.hasFinished()))
+                    return false;
+
                 return areChildrenDone(statusMessage);
             }
         }.start();
@@ -1346,82 +1636,5 @@ public class Robot
         getRightMotor().setMode(newMode);
 
         return originalMode;
-    }
-
-
-    public EndableAction startMovingArmToPosition(final ARM_LOCATION desiredLocation)
-    {
-        return new EndableAction("movingArmToPosition", "movingArmToPosition(%s)", desiredLocation)
-        {
-            @Override
-            public EndableAction start()
-            {
-                super.start();
-                if (!armExtensionCalibrated || !armSwingCalibrated)
-                {
-                    abort("Must calibrate before setting arm position");
-                    return this;
-                }
-
-                if (currentArmLocation==desiredLocation)
-                {
-                    log("No change to arm location, it is already %s", desiredLocation);
-                    return this;
-                }
-
-                if(currentArmLocation == ARM_LOCATION.FOLDED){
-                    setArmSpinServoPosition_raw(ARM_SPIN_STRAIGHT);
-                }
-
-                new MoveArmToSwingPositionAction(desiredLocation.armSwingMotorLocation).start();
-                startMovingArmExtensionToPosition(desiredLocation.armExtensionMotorLocation);
-                new MoveArmSpinToPositionAction(desiredLocation.armSpinServoLocation).start();
-
-                return this;
-            }
-
-            @Override
-            public boolean isDone(StringBuilder statusMessage)
-            {
-                return areChildrenDone(statusMessage);
-            }
-        }.start();
-    }
-
-    private EndableAction startMovingArmExtensionToPosition(final int armExtensionMotorLocation)
-    {
-        return new EndableAction("movingArmExtensionToPosition", "movingArmExtensionToPosition(%d)", armExtensionMotorLocation)
-        {
-            DcMotor.RunMode originalMode = armExtensionMotor.getMode();
-
-            @Override
-            public EndableAction start()
-            {
-                super.start();
-                if (!armExtensionCalibrated)
-                {
-                    abort("Arm extension must be calibrated");
-                    return this;
-                }
-
-                armExtensionMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                armExtensionMotor.setTargetPosition(armExtensionMotorLocation);
-                return this;
-            }
-
-            @Override
-            protected void cleanup(boolean actionWasCompletedSuccessfully)
-            {
-                armExtensionMotor.setPower(0);
-                armExtensionMotor.setMode(originalMode);
-                super.cleanup(actionWasCompletedSuccessfully);
-            }
-
-            @Override
-            public boolean isDone(StringBuilder statusMessage)
-            {
-                return armExtensionMotor.isBusy();
-            }
-        }.start();
     }
 }

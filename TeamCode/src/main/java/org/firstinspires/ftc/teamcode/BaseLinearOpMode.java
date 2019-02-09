@@ -166,7 +166,9 @@ public abstract class BaseLinearOpMode extends LinearOpMode implements Scheduler
             }
         }
         catch (InterruptedException e)
-        {}
+        {
+            return;
+        }
     }
 
     public Telemetry getTelemetry()

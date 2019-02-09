@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.scheduler;
 
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -28,4 +32,17 @@ public abstract class OngoingAction extends Action{
     {
     }
 
+    public boolean isUsingDcMotor(DcMotor motor)
+    {
+        return false;
+    }
+
+    public boolean isUsingServo(Servo servo)
+    {
+        return false;
+    }
+    public boolean isUsingServo(CRServo servo)
+    {
+        return false;
+    }
 }

@@ -46,7 +46,9 @@ public class Autonomous_Depot extends AutonomousOpMode
         if(robotVision.objectColorStringFromLeftToRight .equals("SS"))
             return 2;
         if(robotVision.objectColorStringFromLeftToRight .equals("S"))
-            return 2;
+            return 0;
+        if(robotVision.objectColorStringFromLeftToRight .equals("G"))
+            return 1;
         else
         {
             action.log("Vision timed out, returning default (%d)", resultIfTimeout);

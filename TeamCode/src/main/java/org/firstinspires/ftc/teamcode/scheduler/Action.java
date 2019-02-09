@@ -218,10 +218,17 @@ public abstract class Action {
 
     public void waitFor(EndableAction... actions)
     {
-        waitingToComplete.addAll(Arrays.asList(actions));
+        // remove null actions
+        for(EndableAction a:actions)
+        {
+            if (a != null)
+                waitingToComplete.add(a);
+        }
 
         while (waitingToComplete.size() > 0)
         {
+            setStatus("Waiting for %d actions to complete, including %s",
+                    waitingToComplete.size(), waitingToComplete.iterator().next().label);
             // Keep the scheduler looping while we wait
             Scheduler.get().loop();
 
@@ -250,18 +257,16 @@ public abstract class Action {
 
     public boolean isWaiting()
     {
-        if (waitingToComplete.size()==0)
-            return false;
-
         // Loop through a copy of our list of blocking Actions (so we can remove the ones that have finished0
         for(Action action : new ArrayList<>(waitingToComplete))
         {
             if (action.hasFinished())
                 waitingToComplete.remove(action);
-            else
-                return true;
         }
-        return false;
+        if (waitingToComplete.size()==0)
+            return false;
+        else
+            return true;
     }
 
 }

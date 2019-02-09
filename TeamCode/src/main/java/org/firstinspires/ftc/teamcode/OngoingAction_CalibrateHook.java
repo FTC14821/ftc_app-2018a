@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
+
 import org.firstinspires.ftc.teamcode.scheduler.EndableAction;
 
 import static org.firstinspires.ftc.teamcode.scheduler.Utils.safeStringFormat;
@@ -14,11 +16,20 @@ public class OngoingAction_CalibrateHook extends EndableAction
     }
 
     @Override
+    public boolean isUsingDcMotor(DcMotor motor)
+    {
+        if(motor == robot.hookMotor)
+            return true;
+        else
+            return super.isUsingDcMotor(motor);
+    }
+
+    @Override
     public EndableAction start()
     {
         super.start();
         robot.hookSafetyIsDisabled=true;
-        robot.setHookPower_raw(-0.15);
+        robot.setHookPower_raw(-0.25);
         return this;
     }
 
@@ -26,7 +37,7 @@ public class OngoingAction_CalibrateHook extends EndableAction
     protected void cleanup(boolean actionWasCompleted)
     {
         robot.hookSafetyIsDisabled=false;
-        robot.hookMotor.setPower(0);
+        robot.setHookPower_raw(0);
 
         if (actionWasCompleted)
         {

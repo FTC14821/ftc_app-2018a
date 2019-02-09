@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
+
 import org.firstinspires.ftc.teamcode.scheduler.EndableAction;
 
 public class OngoingAction_ArmReset extends EndableAction
@@ -10,6 +12,16 @@ public class OngoingAction_ArmReset extends EndableAction
     {
         super("ArmReset" );
     }
+
+    @Override
+    public boolean isUsingDcMotor(DcMotor motor)
+    {
+        if(motor == robot.armSwingMotor || motor == robot.armExtensionMotor)
+            return true;
+        else
+            return super.isUsingDcMotor(motor);
+    }
+
 
     @Override
     public EndableAction start()

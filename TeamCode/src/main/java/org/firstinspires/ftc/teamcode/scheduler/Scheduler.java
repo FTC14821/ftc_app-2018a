@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.scheduler;
 
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+
 import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.Robot;
@@ -7,7 +11,6 @@ import static org.firstinspires.ftc.teamcode.scheduler.Utils.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
@@ -163,29 +166,10 @@ public class Scheduler {
 
     private void runOngoingActionLoopMethod(OngoingAction a)
     {
-        // Check to see if EnableAction is done
-        if (a instanceof EndableAction)
-        {
-            EndableAction endableActionA = ((EndableAction) a);
-            StringBuilder statusMessage = new StringBuilder();
-
-            boolean isDone = endableActionA.isDone(statusMessage);
-
-            if (statusMessage.length() > 0)
-                endableActionA.setStatus("(done)" + statusMessage.toString());
-
-            if (isDone)
-            {
-                endableActionA.finish(statusMessage.toString());
-                actionFinished(a);
-                return;
-            }
-        }
-
         // Run loop() if it has been long enough
         long timeSinceLoopWasCalled_ns = System.nanoTime() - a.lastLoopStart_ns;
 
-        if (timeSinceLoopWasCalled_ns > 1e6 * MINIMUM_TIME_BETWEEN_ACTION_LOOPS_MS)
+        if(timeSinceLoopWasCalled_ns > 1e6 * MINIMUM_TIME_BETWEEN_ACTION_LOOPS_MS)
         {
             long startTime_ns = System.nanoTime();
 
@@ -213,6 +197,27 @@ public class Scheduler {
                 a.lastLoopDuration_ns = endTime_ns - startTime_ns;
             }
         }
+
+        // Check to see if EnableAction is done
+        if(a instanceof EndableAction)
+        {
+            EndableAction endableActionA = ((EndableAction) a);
+            StringBuilder statusMessage = new StringBuilder();
+
+            boolean isDone = endableActionA.isDone(statusMessage);
+
+            if(statusMessage.length() > 0)
+                endableActionA.setStatus(statusMessage.toString());
+
+            if(isDone)
+            {
+                log("Action reported that it was done: %s", endableActionA.toShortString());
+                endableActionA.finish(statusMessage.toString());
+                actionFinished(a);
+                return;
+            }
+        }
+
     }
 
     private void logSchedulerStatus()
@@ -273,5 +278,35 @@ public class Scheduler {
             endableAction.abort(reason);
         }
         log("Aborted %d EndableActions", count);
+    }
+
+    public boolean isDcMotorBusy(DcMotor motor)
+    {
+        for (OngoingAction ongoingAction : ongoingActions)
+        {
+            if (ongoingAction.isUsingDcMotor(motor))
+                return true;
+        }
+        return false;
+    }
+
+    public boolean isServoBusy(Servo servo)
+    {
+        for (OngoingAction ongoingAction : ongoingActions)
+        {
+            if (ongoingAction.isUsingServo(servo))
+                return true;
+        }
+        return false;
+    }
+
+    public boolean isServoBusy(CRServo servo)
+    {
+        for (OngoingAction ongoingAction : ongoingActions)
+        {
+            if (ongoingAction.isUsingServo(servo))
+                return true;
+        }
+        return false;
     }
 }
