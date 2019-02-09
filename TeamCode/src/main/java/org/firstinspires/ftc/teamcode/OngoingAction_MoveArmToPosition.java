@@ -59,7 +59,7 @@ public class OngoingAction_MoveArmToPosition extends EndableAction
         switch (robot.currentArmLocation)
         {
             case FOLDED:
-                moveArmDirectly(desiredLocation);
+                moveArmDirectly(Robot.ARM_LOCATION.FRONT_LEVEL);
                 break;
             case FRONT_LEVEL:
                 if (desiredLocation == Robot.ARM_LOCATION.FOLDED)

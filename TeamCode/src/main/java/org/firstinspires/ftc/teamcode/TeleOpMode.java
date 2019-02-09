@@ -50,9 +50,9 @@ abstract class TeleOpMode extends BaseLinearOpMode {
         if(gamepad2.y.onPress)
             robot.startCalibratingEverything();
 
-        if(gamepad2.left_stick_x > 0.1)
+        if(gamepad2.left_stick_x > 0.5)
             robot.setBoxTiltServoPosition_raw(robot.boxTiltServo.getPosition() + 0.05);
-        if(gamepad2.left_stick_x < 0.1)
+        if(gamepad2.left_stick_x < -0.5)
             robot.setBoxTiltServoPosition_raw(robot.boxTiltServo.getPosition() - 0.05);
 
         robot.setLeftBoxServo_teleop(gamepad2.left_bumper.isPressed);
@@ -64,11 +64,17 @@ abstract class TeleOpMode extends BaseLinearOpMode {
         if(gamepad2.right_trigger > 0)
             robot.setArmSpinServoPosition_teleop(robot.armSpinServo.getPosition() + Robot.MAX_ARM_SPIN_SERVO_CHANGE);
 
-        if(gamepad1.a.onPress)
-            log("GAMEPAD1 BOOKMARK-ButtonA");
+        if(gamepad1.right_stick_button.onPress)
+            log("GAMEPAD1 BOOKMARK-RightStickButton");
 
-        if(gamepad2.a.onPress)
-            log("GAMEPAD2 BOOKMARK-ButtonA");
+        if(gamepad2.right_stick_button.onPress)
+            log("GAMEPAD2 BOOKMARK-RightStickButton");
+
+        if(gamepad1.left_stick_button.onPress)
+            log("GAMEPAD1 BOOKMARK-LeftStickButton");
+
+        if(gamepad2.left_stick_button.onPress)
+            log("GAMEPAD2 BOOKMARK-LeftStickButton");
 
         robot.setArmExtensionPower_teleop(-gamepad2.left_stick_y);
 
