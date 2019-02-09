@@ -37,7 +37,9 @@ public class Robot
     public static final double TURN_POWER = 0.35;
     public static final double TURN_SLOWDOWN_POWER = 0.05;
     public static final int TURN_SLOWDOWN_DEGREES = 10;
-    public static final int MAX_HOOK_DISTANCE = 10400;
+    // Where does the hook release from lander?
+    public static final int MAX_HOOK_DISTANCE = 10400-700;
+    public static final int MIN_HOOK_DISTANCE = 500;
 
     public static final int MIN_SWING_ARM_DISTANCE = 100;
     public static final int MAX_SWING_ARM_DISTANCE = 7536;
@@ -956,7 +958,7 @@ public class Robot
         else if (hookMotor.getCurrentPosition() >  MAX_HOOK_DISTANCE && powerToCheck > 0) {
             problemReason = String.format("Hook power %f > 0 and hook too high (%d > %d)", powerToCheck,
                     hookMotor.getCurrentPosition(),  MAX_HOOK_DISTANCE);
-        } else if (hookMotor.getCurrentPosition() < 300 && powerToCheck < 0) {
+        } else if (hookMotor.getCurrentPosition() < MIN_HOOK_DISTANCE && powerToCheck < 0) {
             problemReason = String.format("Hook power %f < 0 and hook too low (%d < %d)", powerToCheck,
                     hookMotor.getCurrentPosition(), 0 );
         }
