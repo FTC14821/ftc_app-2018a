@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.scheduler.Action;
 import org.firstinspires.ftc.teamcode.scheduler.ImmediateAction;
+import org.firstinspires.ftc.teamcode.scheduler.Utils;
 
 @TeleOp(name = "A: Land-Crater", group = "Autonomous")
 
@@ -59,32 +60,34 @@ public class Autonomous_Crater extends AutonomousOpMode
     @Override
     public void teamRun()
     {
-        int goldLocation = getGoldLocation(1000, 0);
+        int goldLocation = -1;
+
         opmodeAction.setStatus("Gold location: %d", goldLocation);
 
         robot.resetCorrectHeading("Perpendicular to lander");
         robot.startMovingHookUp( 1).waitUntilFinished();
         opmodeAction.setStatus("Landed");
+        if (robot.getRobotVision().objectColorStringFromLeftToRight.contains("G"))
+            goldLocation=1;
 
-        robot.setDrivingPowers_raw(1, -1);
-        teamSleep(2000, "Get unhooked");
-        robot.setDrivingPowers_raw(0, 0);
-
+        robot.startTurningRight(37).waitUntilFinished();
         robot.startMovingHookDown(1);
         teamSleep(1500, "Getting hook out of way");
 
+        if (goldLocation==-1 && robot.getRobotVision().objectColorStringFromLeftToRight.contains("G"))
+            goldLocation=2;
+
+        if (goldLocation==-1)
+            goldLocation=0;
+
+        Utils.log("Found gold: %d", goldLocation);
         switch(goldLocation)
         {
-            case 2:
-                boopRightMineral();
-                break;
-            case 1:
-                boopMiddleMineral();
-                break;
-            default:
-                boopLeftMineral();
-                break;
+            case 0: boopLeftMineral();break;
+            case 1: boopMiddleMineral();break;
+            case 2: boopRightMineral();
         }
+
         robot.startStopping();
         robot.startMovingHookDown(1);
         opmodeAction.waitForChildren();
@@ -93,15 +96,10 @@ public class Autonomous_Crater extends AutonomousOpMode
     private void boopLeftMineral()
     {
         Action action = new ImmediateAction("LeftMineral");
-        robot.startInchMove(2, MOVING_SPEED).waitUntilFinished();
 
         action.setStatus("Heading towards mineral");
-        robot.startTurningLeft(30).waitUntilFinished();
-        robot.startInchMove(28, MOVING_SPEED).waitUntilFinished();
-        action.setStatus("Turning to crater");
-        robot.startTurningRight(30).waitUntilFinished();
-        robot.startInchMove(5, MOVING_SPEED).waitUntilFinished();
-
+        robot.startTurningLeft(57).waitUntilFinished();
+        robot.startInchMove(34, MOVING_SPEED).waitUntilFinished();
         action.finish();
     }
 
@@ -109,8 +107,10 @@ public class Autonomous_Crater extends AutonomousOpMode
     {
         // We start 20deg turned right from the lander
         Action action = new ImmediateAction("middleMineral");
+        action.setStatus("Turing towards mineral");
+        robot.startTurningLeft(37).waitUntilFinished();
         action.setStatus("Heading towards mineral");
-        robot.startInchMove(26, MOVING_SPEED).waitUntilFinished();
+        robot.startInchMove(25, MOVING_SPEED).waitUntilFinished();
 
         action.finish();
     }
@@ -120,10 +120,7 @@ public class Autonomous_Crater extends AutonomousOpMode
         // We start 20deg turned right from the lander
         Action action = new ImmediateAction("rightMineral");
         action.setStatus("Moving away from lander");
-        robot.startInchMove(2, MOVING_SPEED).waitUntilFinished();
-        action.setStatus("Turning and moving towards mineral");
-        robot.startTurningRight(40).waitUntilFinished();
-        robot.startInchMove(28, 0.75).waitUntilFinished();
+        robot.startInchMove(42, MOVING_SPEED).waitUntilFinished();
 
         action.finish();
     }

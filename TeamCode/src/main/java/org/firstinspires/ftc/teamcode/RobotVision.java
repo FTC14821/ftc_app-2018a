@@ -245,6 +245,7 @@ public class RobotVision  {
             }
             else
                 objectColorStringBuilder.append('?');
+            objectColorStringBuilder.append(safeStringFormat("(%.0f, %.0f)%.0f C: %.2f", object.getLeft(), object.getBottom(), object.getHeight() * object.getWidth(), object.getConfidence()));
         }
         objectColorStringFromLeftToRight =  objectColorStringBuilder.toString();
 
